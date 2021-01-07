@@ -1,0 +1,156 @@
+<?php
+
+namespace YaFou\Container\Proxy;
+
+use YaFou\Container\Container;
+use YaFou\Container\Definition\ProxyableInterface;
+
+class ProxyManager implements ProxyManagerInterface
+{
+    /**
+     * @var string|null
+     */
+    private $cacheDirectory;
+
+    public function __construct(string $cacheDirectory = null)
+    {
+        $this->cacheDirectory = $cacheDirectory;
+    }
+
+    public function getProxy(Container $container, ProxyableInterface $proxyable)
+    {
+        if (null !== $this->cacheDirectory && file_exists($filename = $this->getFileName($proxyable))) {
+            ob_start();
+            require $filename;
+            $class = ob_get_clean();
+            var_dump($class);
+
+            return new $class($container, $proxyable);
+        }
+
+        $reflection = new \ReflectionClass($class = $proxyable->getProxyClass());
+        $className = $reflection->getShortName() . '__' . substr(md5(microtime()), rand(0, 26), 5);
+
+        $code = <<<PHP
+namespace __Proxy__\\{$reflection->getNamespaceName()};
+
+class $className extends \\$class
+{
+    private \$_container;
+    private \$_definition;
+    private \$_instance;
+
+    public function __construct(\YaFou\Container\Container \$container, \YaFou\Container\Definition\ClassDefinition \$definition)
+    {
+        \$this->_container = \$container;
+        \$this->_definition = \$definition;
+        {$this->getPropertiesUnsettersCode($reflection)}
+    }
+    
+    public function __get(\$name)
+    {
+        return \$this->_getInstance()->\$name;
+    }
+    
+    private function _getInstance(): \\$class
+    {
+        if (null === \$this->_instance) {
+            \$this->_instance = \$this->_definition->get(\$this->_container);
+        }
+    
+        return \$this->_instance;
+    }
+    
+{$this->getMethodsCode($reflection)}
+}
+PHP;
+
+        eval($code);
+        $proxyClass = '__Proxy__\\' . $reflection->getNamespaceName() . '\\' . $className;
+
+        if (null !== $this->cacheDirectory) {
+            $fileName = $this->getFileName($proxyable);
+
+            if (!file_exists(dirname($fileName))) {
+                mkdir(dirname($fileName), 0777, true);
+            }
+
+            file_put_contents($fileName, "<?php\n\n".$code."\n\n?>".$proxyClass);
+        }
+
+        return new $proxyClass($container, $proxyable);
+    }
+
+    private function getFileName(ProxyableInterface $proxyable): string
+    {
+        return $this->cacheDirectory . DIRECTORY_SEPARATOR . str_replace(
+                '\\',
+                DIRECTORY_SEPARATOR,
+                $proxyable->getProxyClass()
+            ) . '.php';
+    }
+
+    private function getPropertiesUnsettersCode(\ReflectionClass $reflection): string
+    {
+        $properties = $reflection->getProperties(\ReflectionProperty::IS_PUBLIC);
+
+        $propertiesCode = array_map(
+            function (\ReflectionProperty $property) {
+                return sprintf('unset($this->%s);', $property->getName());
+            },
+            $properties
+        );
+
+        return join("\n", $propertiesCode);
+    }
+
+    private function getMethodsCode(\ReflectionClass $reflection): string
+    {
+        $methods = $reflection->getMethods(\ReflectionMethod::IS_PUBLIC);
+        $methods = array_filter(
+            $methods,
+            function (\ReflectionMethod $method) {
+                return '__construct' !== $method->getName();
+            }
+        );
+
+        $methodsCode = array_map(
+            function (\ReflectionMethod $method) {
+                return <<<PHP
+    public function {$method->getName()}({$this->getParametersCode($method)}){$this->getReturnTypeCode($method)}
+    {
+        return \$this->_getInstance()->{$method->getName()}(...func_get_args());
+    }
+PHP;
+            },
+            $methods
+        );
+
+        return join("\n\n", $methodsCode);
+    }
+
+    private function getParametersCode(\ReflectionMethod $method): string
+    {
+        $parameters = $method->getParameters();
+
+        $parametersCode = array_map(
+            function (\ReflectionParameter $parameter) {
+                $code = '$' . $parameter->getName();
+
+                if ($parameter->isDefaultValueAvailable()) {
+                    $code .= ' = ' . var_export($parameter->getDefaultValue(), true);
+                }
+
+                return $code;
+            },
+            $parameters
+        );
+
+        return join(', ', $parametersCode);
+    }
+
+    private function getReturnTypeCode(\ReflectionMethod $method): string
+    {
+        return null !== $method->getReturnType() ? ': ' . $method->getReturnType()->getName() : '';
+    }
+}

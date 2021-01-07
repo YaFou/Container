@@ -3,13 +3,17 @@
 namespace YaFou\Container\Tests;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
+use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Exception\WrongOptionException;
+use YaFou\Container\Proxy\ProxyManagerInterface;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
 
 class ContainerTest extends TestCase
 {
@@ -98,5 +102,67 @@ class ContainerTest extends TestCase
             $container->get('id'),
             $container->get('id')
         );
+    }
+
+    public function testGetContainerInterface()
+    {
+        $container = new Container();
+        $this->assertSame($container, $container->get(ContainerInterface::class));
+    }
+
+    public function testGetContainer()
+    {
+        $container = new Container();
+        $this->assertSame($container, $container->get(Container::class));
+    }
+
+    public function testOverrideContainerInterface()
+    {
+        $definition = new ValueDefinition('value');
+        $container = new Container([ContainerInterface::class => $definition]);
+        $this->assertSame('value', $container->get(ContainerInterface::class));
+    }
+
+    public function testOverrideContainer()
+    {
+        $definition = new ValueDefinition('value');
+        $container = new Container([Container::class => $definition]);
+        $this->assertSame('value', $container->get(Container::class));
+    }
+
+    public function testGetProxy()
+    {
+        $container = new Container(['id' => new ClassDefinition(EchoText::class, true, true)]);
+        ob_start();
+        $this->assertInstanceOf(EchoText::class, $container->get('id'));
+        $this->assertEmpty(ob_get_clean());
+    }
+
+    public function testInvalidProxyManagerOption()
+    {
+        $this->expectException(WrongOptionException::class);
+        $this->expectExceptionMessage(
+            'The proxy_manager option must be an instance of ' . ProxyManagerInterface::class
+        );
+        new Container([], ['proxy_manager' => null]);
+    }
+
+    public function testCustomProxyManager()
+    {
+        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true, true);
+
+        $manager = $this->createMock(ProxyManagerInterface::class);
+        $manager->expects($this->once())->method('getProxy')->with($this->isInstanceOf(Container::class), $definition)->willReturn('value');
+
+        $container = new Container(['id' => $definition], ['proxy_manager' => $manager]);
+        $this->assertSame('value', $container->get('id'));
+    }
+
+    public function testGetProxyWithNotSharedDefinition()
+    {
+        $container = new Container(['id' => new ClassDefinition(EchoText::class, false, true)]);
+        ob_start();
+        $this->assertInstanceOf(EchoText::class, $container->get('id'));
+        $this->assertEmpty(ob_get_clean());
     }
 }

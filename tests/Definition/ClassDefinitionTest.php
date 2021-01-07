@@ -7,9 +7,11 @@ use YaFou\Container\Container;
 use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Exception\UnknownArgumentException;
+use YaFou\Container\Tests\Fixtures\AbstractClass;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarParameter;
+use YaFou\Container\Tests\Fixtures\FinalClass;
 
 class ClassDefinitionTest extends TestCase
 {
@@ -54,5 +56,35 @@ class ClassDefinitionTest extends TestCase
     {
         $definition = new ClassDefinition(ConstructorWithNoArgument::class, false);
         $this->assertFalse($definition->isShared());
+    }
+
+    public function testIsDefaultNotLazy()
+    {
+        $definition = new ClassDefinition(ConstructorWithNoArgument::class);
+        $this->assertFalse($definition->isLazy());
+    }
+
+    public function testIsLazy()
+    {
+        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true , true);
+        $this->assertTrue($definition->isLazy());
+    }
+
+    public function testGetProxyClass()
+    {
+        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true , true);
+        $this->assertSame(ConstructorWithNoArgument::class, $definition->getProxyClass());
+    }
+
+    public function testIsNotLazyWithFinalClass()
+    {
+        $definition = new ClassDefinition(FinalClass::class, false, true);
+        $this->assertFalse($definition->isLazy());
+    }
+
+    public function testIsNotLazyWithAbstractClass()
+    {
+        $definition = new ClassDefinition(AbstractClass::class, false, true);
+        $this->assertFalse($definition->isLazy());
     }
 }

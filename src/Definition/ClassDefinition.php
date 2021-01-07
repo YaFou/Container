@@ -6,7 +6,7 @@ use YaFou\Container\Container;
 use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Exception\UnknownArgumentException;
 
-class ClassDefinition implements DefinitionInterface
+class ClassDefinition implements DefinitionInterface, ProxyableInterface
 {
     /**
      * @var string
@@ -17,8 +17,12 @@ class ClassDefinition implements DefinitionInterface
      * @var bool
      */
     private $shared;
+    /**
+     * @var bool
+     */
+    private $lazy;
 
-    public function __construct(string $class, bool $shared = true)
+    public function __construct(string $class, bool $shared = true, bool $lazy = false)
     {
         if (!class_exists($class)) {
             throw new InvalidArgumentException(sprintf('The class "%s" does not exist', $class));
@@ -26,6 +30,7 @@ class ClassDefinition implements DefinitionInterface
 
         $this->class = $class;
         $this->shared = $shared;
+        $this->lazy = $lazy;
     }
 
     public function get(Container $container)
@@ -68,5 +73,22 @@ class ClassDefinition implements DefinitionInterface
     public function isShared(): bool
     {
         return $this->shared;
+    }
+
+    public function getClass(): string
+    {
+        return $this->class;
+    }
+
+    public function isLazy(): bool
+    {
+        $reflection = new \ReflectionClass($this->class);
+
+        return $this->lazy && !$reflection->isFinal() && $reflection->isInstantiable();
+    }
+
+    public function getProxyClass(): string
+    {
+        return $this->class;
     }
 }

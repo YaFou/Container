@@ -1,0 +1,89 @@
+<?php
+
+namespace YaFou\Container\Tests\Proxy;
+
+use PHPUnit\Framework\TestCase;
+use YaFou\Container\Container;
+use YaFou\Container\Definition\ClassDefinition;
+use YaFou\Container\Proxy\ProxyManager;
+use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
+use YaFou\Container\Tests\Fixtures\Proxy\PublicMethod;
+use YaFou\Container\Tests\Fixtures\Proxy\PublicMethodWithDefaultValueParameter;
+use YaFou\Container\Tests\Fixtures\Proxy\PublicMethodWithParameters;
+use YaFou\Container\Tests\Fixtures\Proxy\PublicMethodWithReturnType;
+use YaFou\Container\Tests\Fixtures\Proxy\PublicProperty;
+
+class ProxyManagerTest extends TestCase
+{
+    public function testEchoText()
+    {
+        $manager = new ProxyManager();
+        ob_start();
+        $proxy = $manager->getProxy(new Container(), new ClassDefinition(EchoText::class));
+        $content = ob_get_clean();
+        $this->assertEmpty($content);
+        $this->assertInstanceOf(EchoText::class, $proxy);
+    }
+
+    public function testPublicProperty()
+    {
+        $manager = new ProxyManager();
+        $proxy = $manager->getProxy(new Container(), new ClassDefinition(PublicProperty::class));
+        $this->assertSame('value', $proxy->property);
+    }
+
+    /**
+     * @param string $class
+     * @param array $parameters
+     * @dataProvider providePublicMethods
+     */
+    public function testPublicMethod(string $class, array $parameters = [])
+    {
+        $manager = new ProxyManager();
+        $proxy = $manager->getProxy(new Container(), new ClassDefinition($class));
+        $this->assertSame('value', $proxy->method(...$parameters));
+    }
+
+    public function providePublicMethods(): \Generator
+    {
+        yield 'simple' => [PublicMethod::class];
+        yield 'with parameters' => [PublicMethodWithParameters::class, [null, null]];
+        yield 'with return type' => [PublicMethodWithReturnType::class];
+        yield 'with default value parameter' => [PublicMethodWithDefaultValueParameter::class];
+    }
+
+    public function testCacheDirectory()
+    {
+        $directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . '/YaFou-Container';
+
+        if (file_exists($directory)) {
+            $this->deleteDirectory($directory);
+        }
+
+        mkdir($directory);
+        $manager = new ProxyManager($directory);
+        $this->assertInstanceOf(
+            PublicProperty::class,
+            $manager->getProxy(new Container(), new ClassDefinition(PublicProperty::class))
+        );
+        $this->deleteDirectory($directory);
+    }
+
+    private function deleteDirectory(string $directory): void
+    {
+        $directoryIterator = new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS);
+        $filesIterator = new \RecursiveIteratorIterator($directoryIterator, \RecursiveIteratorIterator::CHILD_FIRST);
+
+        foreach ($filesIterator as $file) {
+            if ($file->isDir()) {
+                rmdir($file->getRealPath());
+
+                continue;
+            }
+
+            unlink($file->getRealPath());
+        }
+
+        rmdir($directory);
+    }
+}
