@@ -26,10 +26,27 @@ class FactoryDefinition implements DefinitionInterface, ProxyableInterface
 
     public function __construct(callable $factory, bool $shared = true, string $class = null, bool $lazy = false)
     {
+        if (null !== $class) {
+            if (!class_exists($class)) {
+                throw new InvalidArgumentException(sprintf('The class "%s" does not exist', $class));
+            }
+
+            $reflection = new \ReflectionClass($class);
+
+            if (!$reflection->isInstantiable()) {
+                throw new InvalidArgumentException(sprintf('The class "%s" must be instantiable', $class));
+            }
+        }
+
         $this->factory = $factory;
         $this->shared = $shared;
         $this->class = $class;
         $this->lazy = $lazy;
+    }
+
+    public function getFactory(): callable
+    {
+        return $this->factory;
     }
 
     public function resolve(Container $container): void
@@ -48,7 +65,7 @@ class FactoryDefinition implements DefinitionInterface, ProxyableInterface
 
     public function isLazy(): bool
     {
-        return $this->lazy && (class_exists($this->class) || interface_exists($this->class));
+        return null !== $this->class && $this->lazy && !(new \ReflectionClass($this->class))->isFinal();
     }
 
     public function getProxyClass(): string

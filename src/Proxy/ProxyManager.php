@@ -32,7 +32,7 @@ class ProxyManager implements ProxyManagerInterface
         $className = $reflection->getShortName() . '__' . substr(md5(microtime()), rand(0, 26), 5);
 
         $code = <<<PHP
-namespace __Proxy__\\{$reflection->getNamespaceName()};
+namespace __Cache__\\Proxy\\{$reflection->getNamespaceName()};
 
 class $className extends \\$class
 {
@@ -40,7 +40,7 @@ class $className extends \\$class
     private \$_definition;
     private \$_instance;
 
-    public function __construct(\YaFou\Container\Container \$container, \YaFou\Container\Definition\ClassDefinition \$definition)
+    public function __construct(\Psr\Container\ContainerInterface \$container, \YaFou\Container\Definition\DefinitionInterface \$definition)
     {
         \$this->_container = \$container;
         \$this->_definition = \$definition;
@@ -66,7 +66,7 @@ class $className extends \\$class
 PHP;
 
         eval($code);
-        $proxyClass = '__Proxy__\\' . $reflection->getNamespaceName() . '\\' . $className;
+        $proxyClass = '__Cache__\\Proxy\\' . $reflection->getNamespaceName() . '\\' . $className;
 
         if (null !== $this->cacheDirectory) {
             $fileName = $this->getFileName($proxyable);

@@ -26,6 +26,11 @@ class AliasDefinition implements DefinitionInterface
         return $container->get($this->alias);
     }
 
+    public function getAlias(): string
+    {
+        return $this->alias;
+    }
+
     public function isShared(): bool
     {
         return true;

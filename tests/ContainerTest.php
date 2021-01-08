@@ -165,4 +165,18 @@ class ContainerTest extends TestCase
         $this->assertInstanceOf(EchoText::class, $container->get('id'));
         $this->assertEmpty(ob_get_clean());
     }
+
+    public function testGetDefinitionsWithNoDefinitions()
+    {
+        $this->assertEmpty((new Container())->getDefinitions());
+    }
+
+    public function testGetDefinitionsWithDefinitions()
+    {
+        $container = new Container($definitions = [
+            'id1' => new ValueDefinition(1),
+            'id2' => new ValueDefinition(2)
+                                   ]);
+        $this->assertSame($definitions, $container->getDefinitions());
+    }
 }

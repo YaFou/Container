@@ -6,11 +6,43 @@ use PHPUnit\Framework\TestCase;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\FactoryDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
+use YaFou\Container\Tests\Fixtures\AbstractClass;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
-use YaFou\Container\Tests\Fixtures\InterfaceWithNoMethod;
+use YaFou\Container\Tests\Fixtures\FinalClass;
+use YaFou\Container\Tests\Fixtures\PrivateConstructor;
 
 class FactoryDefinitionTest extends TestCase
 {
+    public function testUnknownClass()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The class "class" does not exist');
+        new FactoryDefinition($this->makeCallable(new Container()), true, 'class');
+    }
+
+    private function makeCallable(Container $container): callable
+    {
+        return function (Container $actualContainer) use ($container) {
+            $this->assertSame($container, $actualContainer);
+
+            return 'value';
+        };
+    }
+
+    public function testAbstractClass()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The class "' . AbstractClass::class . '" must be instantiable');
+        new FactoryDefinition($this->makeCallable(new Container()), true, AbstractClass::class);
+    }
+
+    public function testClassWithPrivateConstructor()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The class "' . PrivateConstructor::class . '" must be instantiable');
+        new FactoryDefinition($this->makeCallable(new Container()), true, PrivateConstructor::class);
+    }
+
     public function testGet()
     {
         $container = new Container();
@@ -30,15 +62,6 @@ class FactoryDefinitionTest extends TestCase
         $this->assertFalse($definition->isShared());
     }
 
-    private function makeCallable(Container $container): callable
-    {
-        return function (Container $actualContainer) use($container) {
-            $this->assertSame($container, $actualContainer);
-
-            return 'value';
-        };
-    }
-
     public function testIsDefaultNotLazy()
     {
         $definition = new FactoryDefinition($this->makeCallable(new Container()));
@@ -51,22 +74,32 @@ class FactoryDefinitionTest extends TestCase
         $this->assertFalse($definition->isLazy());
     }
 
-    public function testIsNotLazyWithUnknownClass()
+    public function testIsLazyWithClass()
     {
-        $definition = new FactoryDefinition($this->makeCallable(new Container()), true, 'unknown_class', true);
+        $definition = new FactoryDefinition(
+            $this->makeCallable(new Container()),
+            true,
+            ConstructorWithNoArgument::class,
+            true
+        );
+        $this->assertTrue($definition->isLazy());
+    }
+
+    public function testIsNotLazyWithFinalClass()
+    {
+        $definition = new FactoryDefinition($this->makeCallable(new Container()), false, FinalClass::class, true);
         $this->assertFalse($definition->isLazy());
     }
 
-    public function testIsLazyWithClass()
+    public function testGetProxy()
     {
-        $definition = new FactoryDefinition($this->makeCallable(new Container()), true, ConstructorWithNoArgument::class, true);
-        $this->assertTrue($definition->isLazy());
-    }
-
-    public function testIsLazyWithInterface()
-    {
-        $definition = new FactoryDefinition($this->makeCallable(new Container()), true, InterfaceWithNoMethod::class, true);
-        $this->assertTrue($definition->isLazy());
+        $definition = new FactoryDefinition(
+            $this->makeCallable(new Container()),
+            true,
+            ConstructorWithNoArgument::class,
+            true
+        );
+        $this->assertSame(ConstructorWithNoArgument::class, $definition->getProxyClass());
     }
 
     public function testGetProxyClassWithNoClass()
@@ -75,11 +108,5 @@ class FactoryDefinitionTest extends TestCase
         $this->expectExceptionMessage('No class defined');
         $definition = new FactoryDefinition($this->makeCallable(new Container()));
         $definition->getProxyClass();
-    }
-
-    public function testGetProxy()
-    {
-        $definition = new FactoryDefinition($this->makeCallable(new Container()), true, ConstructorWithNoArgument::class, true);
-        $this->assertSame(ConstructorWithNoArgument::class, $definition->getProxyClass());
     }
 }

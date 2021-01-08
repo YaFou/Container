@@ -19,7 +19,7 @@ class Container implements ContainerInterface
     /**
      * @var array
      */
-    private $options;
+    protected $options;
 
     public function __construct(array $definitions = [], array $options = [])
     {
@@ -111,5 +111,19 @@ class Container implements ContainerInterface
         if (!$this->has($id)) {
             throw new NotFoundException(sprintf('The id "%s" was not found', $id));
         }
+    }
+
+    public function getDefinitions(): array
+    {
+        $definitions = [];
+
+        foreach ($this->definitions as $id => $definition) {
+            if (!$definition instanceof ValueDefinition || (ContainerInterface::class !== $id && Container::class !== $id && $this !== $definition->getValue(
+                    ))) {
+                $definitions[$id] = $definition;
+            }
+        }
+
+        return $definitions;
     }
 }

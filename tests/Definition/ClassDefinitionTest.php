@@ -11,7 +11,9 @@ use YaFou\Container\Tests\Fixtures\AbstractClass;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarParameter;
+use YaFou\Container\Tests\Fixtures\ConstructorWithTwoArguments;
 use YaFou\Container\Tests\Fixtures\FinalClass;
+use YaFou\Container\Tests\Fixtures\PrivateConstructor;
 
 class ClassDefinitionTest extends TestCase
 {
@@ -20,6 +22,20 @@ class ClassDefinitionTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The class "class" does not exist');
         new ClassDefinition('class');
+    }
+
+    public function testAbstractClass()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The class "' . AbstractClass::class . '" must be instantiable');
+        new ClassDefinition(AbstractClass::class);
+    }
+
+    public function testClassWithPrivateConstructor()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The class "' . PrivateConstructor::class . '" must be instantiable');
+        new ClassDefinition(PrivateConstructor::class);
     }
 
     public function testResolveWithUnknownArgument()
@@ -66,14 +82,8 @@ class ClassDefinitionTest extends TestCase
 
     public function testIsLazy()
     {
-        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true , true);
+        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true, true);
         $this->assertTrue($definition->isLazy());
-    }
-
-    public function testGetProxyClass()
-    {
-        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true , true);
-        $this->assertSame(ConstructorWithNoArgument::class, $definition->getProxyClass());
     }
 
     public function testIsNotLazyWithFinalClass()
@@ -82,9 +92,9 @@ class ClassDefinitionTest extends TestCase
         $this->assertFalse($definition->isLazy());
     }
 
-    public function testIsNotLazyWithAbstractClass()
+    public function testGetProxyClass()
     {
-        $definition = new ClassDefinition(AbstractClass::class, false, true);
-        $this->assertFalse($definition->isLazy());
+        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true, true);
+        $this->assertSame(ConstructorWithNoArgument::class, $definition->getProxyClass());
     }
 }

@@ -28,17 +28,31 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
             throw new InvalidArgumentException(sprintf('The class "%s" does not exist', $class));
         }
 
+        $reflection = new \ReflectionClass($class);
+
+        if (!$reflection->isInstantiable()) {
+            throw new InvalidArgumentException(sprintf('The class "%s" must be instantiable', $class));
+        }
+
         $this->class = $class;
         $this->shared = $shared;
         $this->lazy = $lazy;
     }
 
+    public function getArguments(): ?array
+    {
+        return $this->arguments;
+    }
+
     public function get(Container $container)
     {
         $this->resolve($container);
-        $arguments = array_map(function (string $id) use ($container) {
-            return $container->get($id);
-        }, $this->arguments);
+        $arguments = array_map(
+            function (string $id) use ($container) {
+                return $container->get($id);
+            },
+            $this->arguments
+        );
 
         return (new \ReflectionClass($this->class))->newInstanceArgs($arguments);
     }
@@ -82,9 +96,7 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
 
     public function isLazy(): bool
     {
-        $reflection = new \ReflectionClass($this->class);
-
-        return $this->lazy && !$reflection->isFinal() && $reflection->isInstantiable();
+        return $this->lazy && !(new \ReflectionClass($this->class))->isFinal();
     }
 
     public function getProxyClass(): string

@@ -2,9 +2,9 @@
 
 namespace YaFou\Container\Tests\Definition;
 
+use PHPUnit\Framework\TestCase;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\ValueDefinition;
-use PHPUnit\Framework\TestCase;
 
 class ValueDefinitionTest extends TestCase
 {

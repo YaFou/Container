@@ -26,4 +26,9 @@ class ValueDefinition implements DefinitionInterface
     {
         return true;
     }
+
+    public function getValue()
+    {
+        return $this->value;
+    }
 }

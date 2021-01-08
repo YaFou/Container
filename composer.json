@@ -1,7 +1,9 @@
 {
+    "name": "yafou/container",
     "require": {
         "php": "^7.3",
-        "psr/container": "^1.0.0"
+        "psr/container": "^1.0.0",
+        "opis/closure": "^3.6"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.5",
