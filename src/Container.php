@@ -14,12 +14,12 @@ use YaFou\Container\Proxy\ProxyManagerInterface;
 
 class Container implements ContainerInterface
 {
-    private $definitions;
-    private $resolvedEntries = [];
     /**
      * @var array
      */
     protected $options;
+    private $definitions;
+    protected $resolvedEntries = [];
 
     public function __construct(array $definitions = [], array $options = [])
     {
@@ -39,7 +39,7 @@ class Container implements ContainerInterface
         }
 
         if (!isset($this->definitions[static::class])) {
-            $this->definitions[static::class] = $selfDefinition;
+            $this->definitions[static::class] = $this->definitions[self::class] = $selfDefinition;
         }
     }
 
@@ -118,8 +118,14 @@ class Container implements ContainerInterface
         $definitions = [];
 
         foreach ($this->definitions as $id => $definition) {
-            if (!$definition instanceof ValueDefinition || (ContainerInterface::class !== $id && Container::class !== $id && $this !== $definition->getValue(
-                    ))) {
+            if (
+                !$definition instanceof ValueDefinition ||
+                (
+                    ContainerInterface::class !== $id
+                    && Container::class !== $id &&
+                    $this !== $definition->getValue()
+                )
+            ) {
                 $definitions[$id] = $definition;
             }
         }

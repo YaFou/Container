@@ -13,6 +13,7 @@ use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Proxy\ProxyManagerInterface;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\ExtendedContainer;
 use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
 
 class ContainerTest extends TestCase
@@ -178,5 +179,12 @@ class ContainerTest extends TestCase
             'id2' => new ValueDefinition(2)
                                    ]);
         $this->assertSame($definitions, $container->getDefinitions());
+    }
+
+    public function testGetContainerChildren()
+    {
+        $container = new ExtendedContainer();
+        $this->assertSame($container, $container->get(ExtendedContainer::class));
+        $this->assertSame($container, $container->get(Container::class));
     }
 }
