@@ -17,6 +17,10 @@ class ContainerBuilder
      * @var string
      */
     private $compilationFile;
+    /**
+     * @var array
+     */
+    private $compilationOptions;
 
     public function build(): Container
     {
@@ -27,8 +31,9 @@ class ContainerBuilder
 
         if (null !== $this->compilationFile && file_exists($this->compilationFile)) {
             require_once $this->compilationFile;
+            $class = $this->getCompiledContainerClass();
 
-            return new \__Cache__\CompiledContainer($options);
+            return new $class($options);
         }
 
         $definitions = array_map(
@@ -39,14 +44,24 @@ class ContainerBuilder
         );
 
         if (null !== $this->compilationFile) {
-            $code = (new Compiler())->compile($definitions, $options);
+            $code = (new Compiler())->compile($definitions, $options, $this->compilationOptions);
             file_put_contents($this->compilationFile, $code);
-            require_once $this->compilationFile;
+            require $this->compilationFile;
+            $class = $this->getCompiledContainerClass();
 
-            return new \__Cache__\CompiledContainer($options);
+            return new $class($options);
         }
 
         return new Container($definitions, $options);
+    }
+
+    private function getCompiledContainerClass(): string
+    {
+        return sprintf(
+            '%s\%s',
+            $this->compilationOptions['namespace'] ?? '__Cache__',
+            $this->compilationOptions['class'] ?? 'CompiledContainer'
+        );
     }
 
     public function setLocked(bool $locked = true): self
@@ -95,9 +110,10 @@ class ContainerBuilder
         return $this;
     }
 
-    public function enableCompilation(string $file): self
+    public function enableCompilation(string $file, array $options = []): self
     {
         $this->compilationFile = $file;
+        $this->compilationOptions = $options;
 
         return $this;
     }

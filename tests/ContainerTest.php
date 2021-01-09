@@ -153,7 +153,10 @@ class ContainerTest extends TestCase
         $definition = new ClassDefinition(ConstructorWithNoArgument::class, true, true);
 
         $manager = $this->createMock(ProxyManagerInterface::class);
-        $manager->expects($this->once())->method('getProxy')->with($this->isInstanceOf(Container::class), $definition)->willReturn('value');
+        $manager->expects($this->once())
+            ->method('getProxy')
+            ->with(ConstructorWithNoArgument::class, $this->isInstanceOf(\Closure::class))
+            ->willReturn('value');
 
         $container = new Container(['id' => $definition], ['proxy_manager' => $manager]);
         $this->assertSame('value', $container->get('id'));

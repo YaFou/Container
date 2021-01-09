@@ -150,13 +150,29 @@ class ContainerBuilderTest extends TestCase
 
     public function testEnableCompilation()
     {
-        $file = sys_get_temp_dir().DIRECTORY_SEPARATOR.'YaFou-Container'.DIRECTORY_SEPARATOR.'CompiledContainer.php';
-        mkdir(dirname($file));
-        $builder = (new ContainerBuilder())->enableCompilation($file);
-        $container = $builder->build();
+        $file = sys_get_temp_dir(
+            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+        @mkdir(dirname($file));
+        $container = (new ContainerBuilder())
+            ->enableCompilation($file)
+            ->build();
         $this->assertInstanceOf('__Cache__\\CompiledContainer', $container);
         $this->assertFileExists($file);
-        unlink($file);
-        rmdir(dirname($file));
+        @unlink($file);
+        @rmdir(dirname($file));
+    }
+
+    public function testEnableCompilationWithOptions()
+    {
+        $file = sys_get_temp_dir(
+            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+        @mkdir(dirname($file));
+        $container = (new ContainerBuilder())
+            ->enableCompilation($file, ['class' => 'CustomClass', 'namespace' => 'CustomNamespace'])
+            ->build();
+        $this->assertInstanceOf('CustomNamespace\\CustomClass', $container);
+        $this->assertFileExists($file);
+        @unlink($file);
+        @rmdir(dirname($file));
     }
 }

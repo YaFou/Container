@@ -2,9 +2,6 @@
 
 namespace YaFou\Container\Proxy;
 
-use YaFou\Container\Container;
-use YaFou\Container\Definition\ProxyableInterface;
-
 class ProxyManager implements ProxyManagerInterface
 {
     /**
@@ -17,9 +14,9 @@ class ProxyManager implements ProxyManagerInterface
         $this->cacheDirectory = $cacheDirectory;
     }
 
-    public function getProxy(Container $container, ProxyableInterface $proxyable)
+    public function getProxy(string $proxyClass, callable $factory)
     {
-        if (null !== $this->cacheDirectory && file_exists($filename = $this->getFileName($proxyable))) {
+        if (null !== $this->cacheDirectory && file_exists($filename = $this->getFileName($proxyClass))) {
             ob_start();
             require $filename;
             $class = ob_get_clean();
@@ -28,22 +25,20 @@ class ProxyManager implements ProxyManagerInterface
             return new $class($container, $proxyable);
         }
 
-        $reflection = new \ReflectionClass($class = $proxyable->getProxyClass());
+        $reflection = new \ReflectionClass($proxyClass);
         $className = $reflection->getShortName() . '__' . substr(md5(microtime()), rand(0, 26), 5);
 
         $code = <<<PHP
 namespace __Cache__\\Proxy\\{$reflection->getNamespaceName()};
 
-class $className extends \\$class
+class $className extends \\$proxyClass
 {
-    private \$_container;
-    private \$_definition;
+    private \$_factory;
     private \$_instance;
 
-    public function __construct(\Psr\Container\ContainerInterface \$container, \YaFou\Container\Definition\DefinitionInterface \$definition)
+    public function __construct(callable \$factory)
     {
-        \$this->_container = \$container;
-        \$this->_definition = \$definition;
+        \$this->_factory = \$factory;
         {$this->getPropertiesUnsettersCode($reflection)}
     }
     
@@ -52,10 +47,10 @@ class $className extends \\$class
         return \$this->_getInstance()->\$name;
     }
     
-    private function _getInstance(): \\$class
+    private function _getInstance(): \\$proxyClass
     {
         if (null === \$this->_instance) {
-            \$this->_instance = \$this->_definition->get(\$this->_container);
+            \$this->_instance = (\$this->_factory)();
         }
     
         return \$this->_instance;
@@ -69,24 +64,24 @@ PHP;
         $proxyClass = '__Cache__\\Proxy\\' . $reflection->getNamespaceName() . '\\' . $className;
 
         if (null !== $this->cacheDirectory) {
-            $fileName = $this->getFileName($proxyable);
+            $fileName = $this->getFileName($proxyClass);
 
             if (!file_exists(dirname($fileName))) {
                 mkdir(dirname($fileName), 0777, true);
             }
 
-            file_put_contents($fileName, "<?php\n\n".$code."\n\n?>".$proxyClass);
+            file_put_contents($fileName, "<?php\n\n" . $code . "\n\n?>" . $proxyClass);
         }
 
-        return new $proxyClass($container, $proxyable);
+        return new $proxyClass($factory);
     }
 
-    private function getFileName(ProxyableInterface $proxyable): string
+    private function getFileName(string $proxyClass): string
     {
         return $this->cacheDirectory . DIRECTORY_SEPARATOR . str_replace(
                 '\\',
                 DIRECTORY_SEPARATOR,
-                $proxyable->getProxyClass()
+                $proxyClass
             ) . '.php';
     }
 

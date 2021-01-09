@@ -4,6 +4,7 @@ namespace YaFou\Container;
 
 use Psr\Container\ContainerInterface;
 use YaFou\Container\Definition\ClassDefinition;
+use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\ProxyableInterface;
 use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
@@ -18,8 +19,8 @@ class Container implements ContainerInterface
      * @var array
      */
     protected $options;
-    private $definitions;
     protected $resolvedDefinitions = [];
+    private $definitions;
 
     public function __construct(array $definitions = [], array $options = [])
     {
@@ -67,24 +68,32 @@ class Container implements ContainerInterface
 
             if (!$definition->isShared()) {
                 if ($definition instanceof ProxyableInterface && $definition->isLazy()) {
-                    return $this->options['proxy_manager']->getProxy($this, $definition);
+                    return $this->getProxy($definition);
                 }
 
                 return $definition->get($this);
             }
 
             if (!isset($this->resolvedDefinitions[$id])) {
-                if ($definition instanceof ProxyableInterface && $definition->isLazy()) {
-                    $this->resolvedDefinitions[$id] = $this->options['proxy_manager']->getProxy($this, $definition);
-                } else {
-                    $this->resolvedDefinitions[$id] = $definition->get($this);
-                }
+                $this->resolvedDefinitions[$id] = $definition instanceof ProxyableInterface && $definition->isLazy() ?
+                    $this->getProxy($definition) :
+                    $definition->get($this);
             }
 
             return $this->resolvedDefinitions[$id];
         }
 
         throw new NotFoundException(sprintf('The id "%s" was not found', $id));
+    }
+
+    private function getProxy(DefinitionInterface $definition)
+    {
+        return $this->options['proxy_manager']->getProxy(
+            $definition->getProxyClass(),
+            function () use ($definition) {
+                return $definition->get($this);
+            }
+        );
     }
 
     public function has($id): bool

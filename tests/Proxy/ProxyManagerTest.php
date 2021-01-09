@@ -3,8 +3,6 @@
 namespace YaFou\Container\Tests\Proxy;
 
 use PHPUnit\Framework\TestCase;
-use YaFou\Container\Container;
-use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Proxy\ProxyManager;
 use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicMethod;
@@ -19,7 +17,12 @@ class ProxyManagerTest extends TestCase
     {
         $manager = new ProxyManager();
         ob_start();
-        $proxy = $manager->getProxy(new Container(), new ClassDefinition(EchoText::class));
+        $proxy = $manager->getProxy(
+            EchoText::class,
+            function () {
+                return new EchoText();
+            }
+        );
         $content = ob_get_clean();
         $this->assertEmpty($content);
         $this->assertInstanceOf(EchoText::class, $proxy);
@@ -28,7 +31,12 @@ class ProxyManagerTest extends TestCase
     public function testPublicProperty()
     {
         $manager = new ProxyManager();
-        $proxy = $manager->getProxy(new Container(), new ClassDefinition(PublicProperty::class));
+        $proxy = $manager->getProxy(
+            PublicProperty::class,
+            function () {
+                return new PublicProperty();
+            }
+        );
         $this->assertSame('value', $proxy->property);
     }
 
@@ -40,7 +48,12 @@ class ProxyManagerTest extends TestCase
     public function testPublicMethod(string $class, array $parameters = [])
     {
         $manager = new ProxyManager();
-        $proxy = $manager->getProxy(new Container(), new ClassDefinition($class));
+        $proxy = $manager->getProxy(
+            $class,
+            function () use ($class) {
+                return new $class();
+            }
+        );
         $this->assertSame('value', $proxy->method(...$parameters));
     }
 
@@ -62,10 +75,13 @@ class ProxyManagerTest extends TestCase
 
         mkdir($directory);
         $manager = new ProxyManager($directory);
-        $this->assertInstanceOf(
+        $proxy = $manager->getProxy(
             PublicProperty::class,
-            $manager->getProxy(new Container(), new ClassDefinition(PublicProperty::class))
+            function () {
+                return new PublicProperty();
+            }
         );
+        $this->assertInstanceOf(PublicProperty::class, $proxy);
         $this->deleteDirectory($directory);
     }
 

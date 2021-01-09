@@ -13,11 +13,6 @@ abstract class AbstractCompiledContainer extends Container
         parent::__construct([], array_merge(['locked' => true], $options));
     }
 
-    public function has($id): bool
-    {
-        return isset(static::MAPPINGS[$id]) || parent::has($id);
-    }
-
     public function get($id)
     {
         if (isset($this->resolvedDefinitions[$id])) {
@@ -30,10 +25,15 @@ abstract class AbstractCompiledContainer extends Container
 
         if ($this->has($id)) {
             if (isset(static::MAPPINGS[$id])) {
-                return $this->{'get'.static::MAPPINGS[$id]}();
+                return $this->{'get' . static::MAPPINGS[$id]}();
             }
         }
 
         return parent::get($id);
+    }
+
+    public function has($id): bool
+    {
+        return isset(static::MAPPINGS[$id]) || parent::has($id);
     }
 }
