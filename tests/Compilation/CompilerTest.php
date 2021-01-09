@@ -6,34 +6,33 @@ use PHPUnit\Framework\TestCase;
 use YaFou\Container\Compilation\Compiler;
 use YaFou\Container\Definition\AliasDefinition;
 use YaFou\Container\Definition\ClassDefinition;
+use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\FactoryDefinition;
+use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\CompilationException;
+use YaFou\Container\Exception\UnknownArgumentException;
+use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithTwoArguments;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarParameter;
 
 class CompilerTest extends TestCase
 {
-    public function testCompileNoDefinition()
+    public function testEmpty()
     {
         $expected = <<<'PHP'
 <?php
 
 namespace __Cache__;
 
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
+use YaFou\Container\Compilation\AbstractCompiledContainer;
 
-class CompiledContainer extends BaseCompiledContainer
+class CompiledContainer extends AbstractCompiledContainer
 {
-    public function __construct(array $options = [])
-    {
-        parent::__construct([
-        ], $options);
-    }
-
-
+    protected const MAPPINGS = [
+    ];
 }
+
 PHP;
 
         $compiler = new Compiler();
@@ -41,318 +40,442 @@ PHP;
         $this->assertSame($expected, $actual);
     }
 
-    public function testCompileClassDefinitionWithNoArgument()
+    public function testOneClassDefinition()
     {
         $expected = <<<'PHP'
 <?php
 
 namespace __Cache__;
 
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
+use YaFou\Container\Compilation\AbstractCompiledContainer;
 
-class CompiledContainer extends BaseCompiledContainer
+class CompiledContainer extends AbstractCompiledContainer
 {
-    public function __construct(array $options = [])
-    {
-        parent::__construct([
-            'id' => new CompiledDefinition(0, true),
-        ], $options);
-    }
-
-    protected function get0(): \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument
-    {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
-    }
-}
-PHP;
-
-        $definition = new ClassDefinition(ConstructorWithNoArgument::class);
-        $compiler = new Compiler();
-        $actual = $compiler->compile(['id' => $definition]);
-        $this->assertSame($expected, $actual);
-    }
-
-    public function testCompileClassDefinitionWithOneArgument()
-    {
-        $expected = <<<'PHP'
-<?php
-
-namespace __Cache__;
-
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
-
-class CompiledContainer extends BaseCompiledContainer
-{
-    public function __construct(array $options = [])
-    {
-        parent::__construct([
-            'id' => new CompiledDefinition(0, true),
-            'YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument' => new CompiledDefinition(1, true),
-        ], $options);
-    }
-
-    protected function get0(): \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument
-    {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this->get('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'));
-    }
-
-    protected function get1(): \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument
-    {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
-    }
-}
-PHP;
-
-        $definition = new ClassDefinition(ConstructorWithOneArgument::class);
-        $compiler = new Compiler();
-        $actual = $compiler->compile(['id' => $definition]);
-        $this->assertSame($expected, $actual);
-    }
-
-    public function testCompileClassDefinitionWithTwoArguments()
-    {
-        $expected = <<<'PHP'
-<?php
-
-namespace __Cache__;
-
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
-
-class CompiledContainer extends BaseCompiledContainer
-{
-    public function __construct(array $options = [])
-    {
-        parent::__construct([
-            'id' => new CompiledDefinition(0, true),
-            'YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument' => new CompiledDefinition(1, true),
-            'YaFou\\Container\\Tests\\Fixtures\\ConstructorWithOneArgument' => new CompiledDefinition(2, true),
-        ], $options);
-    }
-
-    protected function get0(): \YaFou\Container\Tests\Fixtures\ConstructorWithTwoArguments
-    {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithTwoArguments($this->get('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'), $this->get('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithOneArgument'));
-    }
-
-    protected function get1(): \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument
-    {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
-    }
-
-    protected function get2(): \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument
-    {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this->get('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'));
-    }
-}
-PHP;
-
-        $definition = new ClassDefinition(ConstructorWithTwoArguments::class);
-        $compiler = new Compiler();
-        $actual = $compiler->compile(['id' => $definition]);
-        $this->assertSame($expected, $actual);
-    }
-
-    public function testCompileAliasDefinition()
-    {
-        $expected = <<<'PHP'
-<?php
-
-namespace __Cache__;
-
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
-
-class CompiledContainer extends BaseCompiledContainer
-{
-    public function __construct(array $options = [])
-    {
-        parent::__construct([
-            'id' => new CompiledDefinition(0, true),
-            'YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument' => new CompiledDefinition(1, true),
-        ], $options);
-    }
+    protected const MAPPINGS = [
+        'id' => 0,
+    ];
 
     protected function get0()
     {
-        return $this->get('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument');
-    }
-
-    protected function get1(): \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument
-    {
         return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
     }
 }
+
 PHP;
 
-        $definition = new AliasDefinition(ConstructorWithNoArgument::class);
         $compiler = new Compiler();
-        $actual = $compiler->compile(['id' => $definition]);
+        $actual = $compiler->compile(['id' => new ClassDefinition(ConstructorWithNoArgument::class)]);
         $this->assertSame($expected, $actual);
     }
 
-    public function testCompileWithNotSharedDefinition()
+    public function testResolveDefinitions()
+    {
+        $this->expectException(UnknownArgumentException::class);
+        $this->expectExceptionMessage(
+            'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarParameter::class . '"'
+        );
+        $compiler = new Compiler();
+        $compiler->compile(['id' => new ClassDefinition(ConstructorWithOneScalarParameter::class)]);
+    }
+
+    public function testTwoClassDefinitions()
     {
         $expected = <<<'PHP'
 <?php
 
 namespace __Cache__;
 
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
+use YaFou\Container\Compilation\AbstractCompiledContainer;
 
-class CompiledContainer extends BaseCompiledContainer
+class CompiledContainer extends AbstractCompiledContainer
 {
-    public function __construct(array $options = [])
+    protected const MAPPINGS = [
+        'id' => 0,
+        'YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument' => 1,
+    ];
+
+    protected function get0()
     {
-        parent::__construct([
-            'id' => new CompiledDefinition(0, false),
-        ], $options);
+        return new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this->resolvedEntries['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] ?? $this->get1());
     }
 
-    protected function get0(): \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument
+    protected function get1()
     {
         return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
     }
 }
+
 PHP;
 
-        $definition = new ClassDefinition(ConstructorWithNoArgument::class, false);
         $compiler = new Compiler();
-        $actual = $compiler->compile(['id' => $definition]);
+        $actual = $compiler->compile(['id' => new ClassDefinition(ConstructorWithOneArgument::class)]);
         $this->assertSame($expected, $actual);
     }
 
-    public function testCompileLazy()
+    public function testOneClassDefinitionNotShared()
     {
         $expected = <<<'PHP'
 <?php
 
 namespace __Cache__;
 
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
+use YaFou\Container\Compilation\AbstractCompiledContainer;
 
-class CompiledContainer extends BaseCompiledContainer
+class CompiledContainer extends AbstractCompiledContainer
 {
-    public function __construct(array $options = [])
+    protected const MAPPINGS = [
+        'id' => 0,
+    ];
+
+    protected function get0()
     {
-        parent::__construct([
-            'id' => new CompiledDefinition(0, true),
-        ], $options);
+        return ($this->factories['id'] = function () {
+            return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+        })();
+    }
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $actual = $compiler->compile(['id' => new ClassDefinition(ConstructorWithNoArgument::class, false)]);
+        $this->assertSame($expected, $actual);
     }
 
-    protected function get0(): \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument
+    public function testOneClassDefinitionAndOneClassDefinitionNotShared()
     {
-        return $this->options['proxy_manager']->getProxy('YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument', function () {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+        'id' => 0,
+        'YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument' => 1,
+    ];
+
+    protected function get0()
+    {
+        return ($this->factories['id'] = function () {
+            return new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this->resolvedEntries['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] ?? $this->get1());
+        })();
+    }
+
+    protected function get1()
+    {
+        return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+    }
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $actual = $compiler->compile(['id' => new ClassDefinition(ConstructorWithOneArgument::class, false)]);
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testTwoClassDefinitionsNotShared()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+        'id' => 0,
+        'YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument' => 1,
+    ];
+
+    protected function get0()
+    {
+        return ($this->factories['id'] = function () {
+            return new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument(new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument());
+        })();
+    }
+
+    protected function get1()
+    {
+        return ($this->factories['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] = function () {
+            return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+        })();
+    }
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $actual = $compiler->compile(
+            [
+                'id' => new ClassDefinition(ConstructorWithOneArgument::class, false),
+                ConstructorWithNoArgument::class => new ClassDefinition(ConstructorWithNoArgument::class, false)
+            ]
+        );
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testClassDefinitionLazy()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+        'id' => 0,
+    ];
+
+    protected function get0()
+    {
+        return $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument', function () {
             return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
         });
     }
 }
+
 PHP;
 
-        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true, true);
         $compiler = new Compiler();
-        $actual = $compiler->compile(['id' => $definition]);
+        $actual = $compiler->compile(['id' => new ClassDefinition(ConstructorWithNoArgument::class, true, true)]);
         $this->assertSame($expected, $actual);
     }
 
-    public function testCompileFactoryDefinitionWithClosure()
+    public function testClassDefinitionNotSharedAndLazy()
     {
         $expected = <<<'PHP'
 <?php
 
 namespace __Cache__;
 
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
+use YaFou\Container\Compilation\AbstractCompiledContainer;
 
-class CompiledContainer extends BaseCompiledContainer
+class CompiledContainer extends AbstractCompiledContainer
 {
-    public function __construct(array $options = [])
+    protected const MAPPINGS = [
+        'id' => 0,
+    ];
+
+    protected function get0()
     {
-        parent::__construct([
-            'id' => new CompiledDefinition(0, true),
-        ], $options);
+        return ($this->factories['id'] = function () {
+            return $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument', function () {
+                return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+            });
+        })();
     }
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $actual = $compiler->compile(['id' => new ClassDefinition(ConstructorWithNoArgument::class, false, true)]);
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testFactoryDefinitionWithClosure()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+        'id' => 0,
+    ];
 
     protected function get0()
     {
         return (static function () {
-                return 'value';
-            })($this);
+                        return 'value';
+                    })($this);
     }
 }
+
 PHP;
 
-        $definition = new FactoryDefinition(
-            function () {
-                return 'value';
-            }
-        );
         $compiler = new Compiler();
-        $actual = $compiler->compile(['id' => $definition]);
+        $actual = $compiler->compile(
+            [
+                'id' => new FactoryDefinition(
+                    function () {
+                        return 'value';
+                    }
+                )
+            ]
+        );
         $this->assertSame($expected, $actual);
     }
 
-    public function testCompileFactoryDefinitionWithCallback()
+    public function testFactoryDefinitionWithCallback()
     {
         $expected = <<<'PHP'
 <?php
 
 namespace __Cache__;
 
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
+use YaFou\Container\Compilation\AbstractCompiledContainer;
 
-class CompiledContainer extends BaseCompiledContainer
+class CompiledContainer extends AbstractCompiledContainer
 {
-    public function __construct(array $options = [])
-    {
-        parent::__construct([
-            'id' => new CompiledDefinition(0, true),
-        ], $options);
-    }
+    protected const MAPPINGS = [
+        'id' => 0,
+    ];
 
     protected function get0()
     {
-        return ('session_start')();
+        return ('session_start')($this);
     }
 }
+
 PHP;
 
-        $definition = new FactoryDefinition('session_start');
         $compiler = new Compiler();
-        $actual = $compiler->compile(['id' => $definition]);
+        $actual = $compiler->compile(['id' => new FactoryDefinition('session_start')]);
         $this->assertSame($expected, $actual);
     }
 
-    public function testCompileFactoryDefinitionWithClosureAndUseStatement()
+    public function testValueDefinition()
     {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+        'id' => 0,
+    ];
+
+    protected function get0()
+    {
+        return 'value';
+    }
+}
+
+PHP;
+
         $compiler = new Compiler();
-        $definition = new FactoryDefinition(
-            function () use($compiler) {
-                return 'value';
-            }
-        );
-        $this->expectException(CompilationException::class);
-        $this->expectExceptionMessage('Cannot compile closure factory which imports variables using the `use` keyword');
-        $compiler->compile(['id' => $definition]);
+        $actual = $compiler->compile(['id' => new ValueDefinition('value')]);
+        $this->assertSame($expected, $actual);
     }
 
-    public function testCompileFactoryDefinitionWithClosureAndUseContextKeywords()
+    public function testDefinitionTypeNotSupported()
     {
-        $definition = new FactoryDefinition(
-            function () {
-                $this;
-                return 'value';
-            }
-        );
-        $compiler = new Compiler();
         $this->expectException(CompilationException::class);
-        $this->expectExceptionMessage('Cannot compile closure factory which use $this or self/static/parent references');
-        $compiler->compile(['id' => $definition]);
+        $this->expectExceptionMessageMatches('/Definition of type "\w+" is not supported/');
+        $compiler = new Compiler();
+        $compiler->compile(['id' => $this->createMock(DefinitionInterface::class)]);
+    }
+
+    public function testAliasDefinition()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+        'id' => 0,
+        'alias' => 1,
+    ];
+
+    protected function get0()
+    {
+        return 'value';
+    }
+
+    protected function get1()
+    {
+        return 'value';
+    }
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $actual = $compiler->compile(['id' => new ValueDefinition('value'), 'alias' => new AliasDefinition('id')]);
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testCustomNamespace()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace CustomNamespace;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+    ];
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $actual = $compiler->compile([], [], ['namespace' => 'CustomNamespace']);
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testInvalidNamespace()
+    {
+        $this->expectException(WrongOptionException::class);
+        $this->expectExceptionMessage('The namespace option must be a string');
+        $compiler = new Compiler();
+        $compiler->compile([], [], ['namespace' => null]);
+    }
+
+    public function testCustomClass()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CustomClass extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+    ];
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $actual = $compiler->compile([], [], ['class' => 'CustomClass']);
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testInvalidClass()
+    {
+        $this->expectException(WrongOptionException::class);
+        $this->expectExceptionMessage('The class option must be a string');
+        $compiler = new Compiler();
+        $compiler->compile([], [], ['class' => null]);
     }
 }

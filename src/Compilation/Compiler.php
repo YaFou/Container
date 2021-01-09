@@ -8,11 +8,87 @@ use YaFou\Container\Definition\AliasDefinition;
 use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\FactoryDefinition;
+use YaFou\Container\Definition\ProxyableInterface;
+use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\CompilationException;
+use YaFou\Container\Exception\WrongOptionException;
 
 class Compiler
 {
-    public function compile(array $definitions, array $options = []): string
+    /**
+     * @var array
+     */
+    private $definitions;
+    private $idsToMapping;
+    private $code;
+    private $indentation;
+
+    public function compile(array $definitions, array $containerOptions = [], array $options = []): string
+    {
+        $options = array_merge(
+            [
+                'namespace' => '__Cache__',
+                'class' => 'CompiledContainer'
+            ],
+            $options
+        );
+
+        $this->validateOptions($options);
+        $this->definitions = $this->getDefinitions($definitions, $containerOptions);
+        $mappingIndex = 0;
+        $this->idsToMapping = [];
+
+        $this
+            ->writeln('<?php')
+            ->newLine()
+            ->writeln("namespace {$options['namespace']};")
+            ->newLine()
+            ->writeln('use YaFou\Container\Compilation\AbstractCompiledContainer;')
+            ->newLine()
+            ->writeln("class {$options['class']} extends AbstractCompiledContainer")
+            ->write('{')
+            ->indent()
+            ->write('protected const MAPPINGS = [')
+            ->indent(false);
+
+        foreach ($this->definitions as $id => $definition) {
+            $this
+                ->newLine()
+                ->write('')
+                ->subcompile($id)
+                ->writeRaw(' => ' . $mappingIndex . ',');
+
+            $this->idsToMapping[$id] = $mappingIndex;
+            $mappingIndex++;
+        }
+
+        $this
+            ->outdent()
+            ->write('];');
+
+        foreach ($this->definitions as $id => $definition) {
+            $this->generateMethod($this->idsToMapping[$id], $id, $definition);
+        }
+
+        $this
+            ->outdent()
+            ->writeln('}');
+
+        return $this->code;
+    }
+
+    private function validateOptions(array $options): void
+    {
+        if (!is_string($options['namespace'])) {
+            throw new WrongOptionException('The namespace option must be a string');
+        }
+
+        if (!is_string($options['class'])) {
+            throw new WrongOptionException('The class option must be a string');
+        }
+    }
+
+    private function getDefinitions(array $definitions, array $options): array
     {
         $container = new Container($definitions, $options);
 
@@ -20,135 +96,163 @@ class Compiler
             $container->resolveDefinition($id);
         }
 
-        $definitions = $container->getDefinitions();
-        $compiledDefinitionsCode = '';
-        $mappingIndex = 0;
-        $methodsCode = [];
+        return $container->getDefinitions();
+    }
 
-        foreach ($definitions as $id => $definition) {
-            $definition->resolve($container);
+    private function indent(bool $newLine = true): self
+    {
+        $this->indentation++;
 
-            $compiledDefinitionsCode .= PHP_EOL.'            '.var_export(
-                    $id,
-                    true
-                ) . ' => new CompiledDefinition(' . $mappingIndex . ', ' . var_export(
-                    $definition->isShared(),
-                    true
-                ) . '),';
+        return $newLine ? $this->newLine() : $this;
+    }
 
-            $methodsCode[] = $this->compileDefinition($mappingIndex, $definition);
-            $mappingIndex++;
+    private function newLine(): self
+    {
+        return $this->writeRaw(PHP_EOL);
+    }
+
+    private function writeRaw(string $code): self
+    {
+        $this->code .= $code;
+
+        return $this;
+    }
+
+    private function write(string $code): self
+    {
+        return $this->writeRaw(str_repeat(' ', $this->indentation * 4) . $code);
+    }
+
+    private function writeln(string $code): self
+    {
+        return $this->write($code)->newLine();
+    }
+
+    private function subcompile($value): self
+    {
+        return $this->writeRaw(var_export($value, true));
+    }
+
+    private function outdent(bool $newLine = true): self
+    {
+        $this->indentation--;
+
+        return $newLine ? $this->newLine() : $this;
+    }
+
+    private function generateMethod(int $mappingIndex, string $id, DefinitionInterface $definition): void
+    {
+        $this
+            ->newLine()
+            ->newLine()
+            ->writeln("protected function get$mappingIndex()")
+            ->write('{')
+            ->indent();
+
+        if (!$definition->isShared()) {
+            $this
+                ->write('return ($this->factories[')
+                ->subcompile($id)
+                ->writeRaw('] = function () {')
+                ->indent();
         }
 
-        $methodsCode = join(PHP_EOL.PHP_EOL, $methodsCode);
+        if ($lazy = ($definition instanceof ProxyableInterface && $definition->isLazy())) {
+            $this
+                ->write('return $this->options[\'proxy_manager\']->getProxy(')
+                ->subcompile($definition->getProxyClass())
+                ->writeRaw(', function () {')
+                ->indent();
+        }
 
-        return <<<PHP
-<?php
+        $this
+            ->write('return ')
+            ->generateGetter($definition)
+            ->writeRaw(';');
 
-namespace __Cache__;
+        if ($lazy) {
+            $this
+                ->outdent()
+                ->write('});');
+        }
 
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
-use YaFou\Container\Compilation\CompiledDefinition;
+        if (!$definition->isShared()) {
+            $this
+                ->outdent()
+                ->write('})();');
+        }
 
-class CompiledContainer extends BaseCompiledContainer
-{
-    public function __construct(array \$options = [])
-    {
-        parent::__construct([$compiledDefinitionsCode
-        ], \$options);
+        $this
+            ->outdent()
+            ->write('}');
     }
 
-$methodsCode
-}
-PHP;
-    }
-
-    private function compileDefinition(int $mappingIndex, DefinitionInterface $definition): string
+    private function generateGetter(DefinitionInterface $definition): self
     {
         if ($definition instanceof ClassDefinition) {
-            return $this->compileClassDefinition($mappingIndex, $definition);
-        }
-
-        if ($definition instanceof AliasDefinition) {
-            return $this->compileAliasDefinition($mappingIndex, $definition);
+            return $this->generateClassGetter($definition);
         }
 
         if ($definition instanceof FactoryDefinition) {
-            return $this->compileFactoryDefinition($mappingIndex, $definition);
-        }
-    }
-
-    private function compileClassDefinition(int $mappingIndex, ClassDefinition $definition): string
-    {
-        $code = <<<PHP
-    protected function get$mappingIndex(): \\{$definition->getClass()}
-    {
-        
-PHP;
-
-        if ($definition->isLazy()) {
-            $code .= <<<PHP
-return \$this->options['proxy_manager']->getProxy('{$definition->getProxyClass()}', function () {
-            
-PHP;
+            return $this->generateFactoryGetter($definition);
         }
 
-        $arguments = array_map(function (string $id) {
-            return '$this->get('.var_export($id, true).')';
-        }, $definition->getArguments());
-
-        $argumentsCode = join(', ', $arguments);
-        $code .= "return new \\{$definition->getClass()}($argumentsCode);".PHP_EOL;
-
-        if ($definition->isLazy()) {
-            $code .= '        });'.PHP_EOL;
+        if ($definition instanceof ValueDefinition) {
+            return $this->subcompile($definition->getValue());
         }
 
-        return $code.'    }';
+        if ($definition instanceof AliasDefinition) {
+            return $this->generateGetter($this->definitions[$definition->getAlias()]);
+        }
+
+        throw new CompilationException(sprintf('Definition of type "%s" is not supported', get_class($definition)));
     }
 
-    private function compileAliasDefinition(int $mappingIndex, AliasDefinition $definition): string
+    private function generateClassGetter(ClassDefinition $definition): self
     {
-        $alias = var_export($definition->getAlias(), true);
+        $this->writeRaw("new \\{$definition->getClass()}(");
+        $needComma = false;
 
-        return <<<PHP
-    protected function get$mappingIndex()
-    {
-        return \$this->get($alias);
-    }
-PHP;
+        foreach ($definition->getArguments() as $id) {
+            if ($needComma) {
+                $this->writeRaw(', ');
+            } else {
+                $needComma = true;
+            }
+
+            $argumentDefinition = $this->definitions[$id];
+
+            if (!$argumentDefinition->isShared()) {
+                $this->generateGetter($argumentDefinition);
+
+                continue;
+            }
+
+            $this
+                ->writeRaw('$this->resolvedEntries[')
+                ->subcompile($id)
+                ->writeRaw("] ?? \$this->get{$this->idsToMapping[$id]}()");
+        }
+
+        return $this->writeRaw(')');
     }
 
-    private function compileFactoryDefinition(int $mappingIndex, FactoryDefinition $definition): string
+    private function generateFactoryGetter(FactoryDefinition $definition): self
     {
-        if ($definition->getFactory() instanceof \Closure) {
+        $this->writeRaw('(');
+
+        if (($factory = $definition->getFactory()) instanceof \Closure) {
             $reflection = new ReflectionClosure($definition->getFactory());
 
-            if ($reflection->getUseVariables()) {
-                throw new CompilationException('Cannot compile closure factory which imports variables using the `use` keyword');
+            if (!$reflection->isStatic()) {
+                $this->writeRaw('static ');
             }
 
-            if ($reflection->isBindingRequired() || $reflection->isScopeRequired()) {
-                throw new CompilationException('Cannot compile closure factory which use $this or self/static/parent references');
-            }
-
-            $code = ($reflection->isStatic() ? '' : 'static ').$reflection->getCode();
-
-            return <<<PHP
-    protected function get$mappingIndex()
-    {
-        return ($code)(\$this);
-    }
-PHP;
+            $this->writeRaw($reflection->getCode());
+        } else {
+            $this->subcompile($factory);
         }
 
-        $factoryCode = var_export($definition->getFactory(), true);
-
-        return <<<PHP
-    protected function get$mappingIndex()
-    {
-        return ($factoryCode)();
-    }
-PHP;
+        return $this->writeRaw(')($this)');
     }
 }

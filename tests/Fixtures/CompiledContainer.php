@@ -2,7 +2,7 @@
 
 namespace YaFou\Container\Tests\Fixtures;
 
-use YaFou\Container\Compilation\CompiledContainer as BaseCompiledContainer;
+use YaFou\Container\Compilation\AbstractCompiledContainer as BaseCompiledContainer;
 
 class CompiledContainer extends BaseCompiledContainer
 {
