@@ -149,32 +149,23 @@ class Compiler
             ->write('{')
             ->indent();
 
-        if (!$definition->isShared()) {
+        if ($definition->isShared()) {
             $this
-                ->write('return ($this->factories[')
+                ->write('return $this->resolvedDefinitions[')
+                ->subcompile($id)
+                ->writeRaw('] = ');
+        } else {
+            $this
+                ->write('return ($this->resolvedFactories[')
                 ->subcompile($id)
                 ->writeRaw('] = function () {')
-                ->indent();
-        }
-
-        if ($lazy = ($definition instanceof ProxyableInterface && $definition->isLazy())) {
-            $this
-                ->write('return $this->options[\'proxy_manager\']->getProxy(')
-                ->subcompile($definition->getProxyClass())
-                ->writeRaw(', function () {')
-                ->indent();
+                ->indent()
+                ->write('return ');
         }
 
         $this
-            ->write('return ')
             ->generateGetter($definition)
             ->writeRaw(';');
-
-        if ($lazy) {
-            $this
-                ->outdent()
-                ->write('});');
-        }
 
         if (!$definition->isShared()) {
             $this
@@ -189,23 +180,35 @@ class Compiler
 
     private function generateGetter(DefinitionInterface $definition): self
     {
+        if ($lazy = ($definition instanceof ProxyableInterface && $definition->isLazy())) {
+            $this
+                ->writeRaw('$this->options[\'proxy_manager\']->getProxy(')
+                ->subcompile($definition->getProxyClass())
+                ->writeRaw(', function () {')
+                ->indent()
+                ->write('return ');
+        }
+
         if ($definition instanceof ClassDefinition) {
-            return $this->generateClassGetter($definition);
+            $this->generateClassGetter($definition);
+        } elseif ($definition instanceof FactoryDefinition) {
+            $this->generateFactoryGetter($definition);
+        } elseif ($definition instanceof ValueDefinition) {
+            $this->subcompile($definition->getValue());
+        } elseif ($definition instanceof AliasDefinition) {
+            $this->generateGetter($this->definitions[$definition->getAlias()]);
+        } else {
+            throw new CompilationException(sprintf('Definition of type "%s" is not supported', get_class($definition)));
         }
 
-        if ($definition instanceof FactoryDefinition) {
-            return $this->generateFactoryGetter($definition);
+        if ($lazy) {
+            $this
+                ->writeRaw(';')
+                ->outdent()
+                ->write('})');
         }
 
-        if ($definition instanceof ValueDefinition) {
-            return $this->subcompile($definition->getValue());
-        }
-
-        if ($definition instanceof AliasDefinition) {
-            return $this->generateGetter($this->definitions[$definition->getAlias()]);
-        }
-
-        throw new CompilationException(sprintf('Definition of type "%s" is not supported', get_class($definition)));
+        return $this;
     }
 
     private function generateClassGetter(ClassDefinition $definition): self
@@ -229,7 +232,7 @@ class Compiler
             }
 
             $this
-                ->writeRaw('$this->resolvedEntries[')
+                ->writeRaw('$this->resolvedDefinitions[')
                 ->subcompile($id)
                 ->writeRaw("] ?? \$this->get{$this->idsToMapping[$id]}()");
         }

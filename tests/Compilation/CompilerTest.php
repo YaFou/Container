@@ -10,6 +10,7 @@ use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\FactoryDefinition;
 use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\CompilationException;
+use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Exception\UnknownArgumentException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
@@ -57,7 +58,7 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+        return $this->resolvedDefinitions['id'] = new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
     }
 }
 
@@ -78,6 +79,14 @@ PHP;
         $compiler->compile(['id' => new ClassDefinition(ConstructorWithOneScalarParameter::class)]);
     }
 
+    public function testContainerOptions()
+    {
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('The id "' . ConstructorWithNoArgument::class . '" was not found');
+        $compiler = new Compiler();
+        $compiler->compile(['id' => new ClassDefinition(ConstructorWithOneArgument::class)], ['locked' => true]);
+    }
+
     public function testTwoClassDefinitions()
     {
         $expected = <<<'PHP'
@@ -96,12 +105,12 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this->resolvedEntries['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] ?? $this->get1());
+        return $this->resolvedDefinitions['id'] = new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this->resolvedDefinitions['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] ?? $this->get1());
     }
 
     protected function get1()
     {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+        return $this->resolvedDefinitions['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] = new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
     }
 }
 
@@ -129,7 +138,7 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return ($this->factories['id'] = function () {
+        return ($this->resolvedFactories['id'] = function () {
             return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
         })();
     }
@@ -160,14 +169,14 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return ($this->factories['id'] = function () {
-            return new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this->resolvedEntries['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] ?? $this->get1());
+        return ($this->resolvedFactories['id'] = function () {
+            return new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this->resolvedDefinitions['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] ?? $this->get1());
         })();
     }
 
     protected function get1()
     {
-        return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+        return $this->resolvedDefinitions['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] = new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
     }
 }
 
@@ -196,14 +205,14 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return ($this->factories['id'] = function () {
+        return ($this->resolvedFactories['id'] = function () {
             return new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument(new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument());
         })();
     }
 
     protected function get1()
     {
-        return ($this->factories['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] = function () {
+        return ($this->resolvedFactories['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] = function () {
             return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
         })();
     }
@@ -238,7 +247,7 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument', function () {
+        return $this->resolvedDefinitions['id'] = $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument', function () {
             return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
         });
     }
@@ -268,7 +277,7 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return ($this->factories['id'] = function () {
+        return ($this->resolvedFactories['id'] = function () {
             return $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument', function () {
                 return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
             });
@@ -300,7 +309,7 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return (static function () {
+        return $this->resolvedDefinitions['id'] = (static function () {
                         return 'value';
                     })($this);
     }
@@ -338,7 +347,7 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return ('session_start')($this);
+        return $this->resolvedDefinitions['id'] = ('session_start')($this);
     }
 }
 
@@ -366,7 +375,7 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return 'value';
+        return $this->resolvedDefinitions['id'] = 'value';
     }
 }
 
@@ -403,12 +412,12 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return 'value';
+        return $this->resolvedDefinitions['id'] = 'value';
     }
 
     protected function get1()
     {
-        return 'value';
+        return $this->resolvedDefinitions['alias'] = 'value';
     }
 }
 
@@ -477,5 +486,50 @@ PHP;
         $this->expectExceptionMessage('The class option must be a string');
         $compiler = new Compiler();
         $compiler->compile([], [], ['class' => null]);
+    }
+
+    public function testFoo()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+        'id' => 0,
+        'YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument' => 1,
+    ];
+
+    protected function get0()
+    {
+        return $this->resolvedDefinitions['id'] = new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument', function () {
+            return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+        }));
+    }
+
+    protected function get1()
+    {
+        return ($this->resolvedFactories['YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument'] = function () {
+            return $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument', function () {
+                return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+            });
+        })();
+    }
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $actual = $compiler->compile(
+            [
+                'id' => new ClassDefinition(ConstructorWithOneArgument::class),
+                ConstructorWithNoArgument::class => new ClassDefinition(ConstructorWithNoArgument::class, false, true)
+            ]
+        );
+        $this->assertSame($expected, $actual);
     }
 }

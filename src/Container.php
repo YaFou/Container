@@ -19,7 +19,7 @@ class Container implements ContainerInterface
      */
     protected $options;
     private $definitions;
-    protected $resolvedEntries = [];
+    protected $resolvedDefinitions = [];
 
     public function __construct(array $definitions = [], array $options = [])
     {
@@ -73,15 +73,15 @@ class Container implements ContainerInterface
                 return $definition->get($this);
             }
 
-            if (!isset($this->resolvedEntries[$id])) {
+            if (!isset($this->resolvedDefinitions[$id])) {
                 if ($definition instanceof ProxyableInterface && $definition->isLazy()) {
-                    $this->resolvedEntries[$id] = $this->options['proxy_manager']->getProxy($this, $definition);
+                    $this->resolvedDefinitions[$id] = $this->options['proxy_manager']->getProxy($this, $definition);
                 } else {
-                    $this->resolvedEntries[$id] = $definition->get($this);
+                    $this->resolvedDefinitions[$id] = $definition->get($this);
                 }
             }
 
-            return $this->resolvedEntries[$id];
+            return $this->resolvedDefinitions[$id];
         }
 
         throw new NotFoundException(sprintf('The id "%s" was not found', $id));
