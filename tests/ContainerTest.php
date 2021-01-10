@@ -11,9 +11,12 @@ use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Exception\RecursiveDependencyDetectedException;
+use YaFou\Container\Exception\UnknownArgumentException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Proxy\ProxyManagerInterface;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
+use YaFou\Container\Tests\Fixtures\DoubleExtendedContainer;
 use YaFou\Container\Tests\Fixtures\ExtendedContainer;
 use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
 use YaFou\Container\Tests\Fixtures\RecursiveDependency1;
@@ -159,10 +162,10 @@ class ContainerTest extends TestCase
         $manager->expects($this->once())
             ->method('getProxy')
             ->with(ConstructorWithNoArgument::class, $this->isInstanceOf(\Closure::class))
-            ->willReturn('value');
+            ->willReturn($object = new \stdClass());
 
         $container = new Container(['id' => $definition], ['proxy_manager' => $manager]);
-        $this->assertSame('value', $container->get('id'));
+        $this->assertSame($object, $container->get('id'));
     }
 
     public function testGetProxyWithNotSharedDefinition()
@@ -189,7 +192,7 @@ class ContainerTest extends TestCase
         $this->assertSame($definitions, $container->getDefinitions());
     }
 
-    public function testGetContainerChildren()
+    public function testGetContainerChild()
     {
         $container = new ExtendedContainer();
         $this->assertSame($container, $container->get(ExtendedContainer::class));
@@ -198,6 +201,8 @@ class ContainerTest extends TestCase
 
     public function testThrowExceptionWhenRecursiveDependencyDetected()
     {
+        $container = new Container();
+
         $this->expectException(RecursiveDependencyDetectedException::class);
         $this->expectExceptionMessage(
             sprintf(
@@ -208,7 +213,34 @@ class ContainerTest extends TestCase
             )
         );
 
-        $container = new Container();
         $container->resolveDefinition(RecursiveDependency1::class);
+    }
+
+    public function testValidateWithWrongDependency()
+    {
+        $container = new Container(['id' => new ClassDefinition(ConstructorWithOneScalarArgument::class)]);
+        $this->expectException(UnknownArgumentException::class);
+        $this->expectExceptionMessage(
+            'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarArgument::class . '"'
+        );
+        $container->validate();
+    }
+
+    public function testResolveDefinition()
+    {
+        $container = new Container(['id' => new ClassDefinition(ConstructorWithOneScalarArgument::class)]);
+        $this->expectException(UnknownArgumentException::class);
+        $this->expectExceptionMessage(
+            'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarArgument::class . '"'
+        );
+        $container->resolveDefinition('id');
+    }
+
+    public function testGetContainerDoubleChild()
+    {
+        $container = new DoubleExtendedContainer();
+        $this->assertSame($container, $container->get(DoubleExtendedContainer::class));
+        $this->assertSame($container, $container->get(ExtendedContainer::class));
+        $this->assertSame($container, $container->get(Container::class));
     }
 }

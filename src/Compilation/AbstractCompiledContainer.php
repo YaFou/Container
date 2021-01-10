@@ -6,6 +6,8 @@ use YaFou\Container\Container;
 
 abstract class AbstractCompiledContainer extends Container
 {
+    protected const MAPPINGS = [];
+
     protected $resolvedFactories = [];
 
     public function __construct(array $options = [])
@@ -15,21 +17,14 @@ abstract class AbstractCompiledContainer extends Container
 
     public function get($id)
     {
-        if (isset($this->resolvedDefinitions[$id])) {
-            return $this->resolvedDefinitions[$id];
-        }
-
-        if (isset($this->resolvedFactories[$id])) {
-            return $this->resolvedFactories[$id]();
-        }
-
-        if ($this->has($id)) {
-            if (isset(static::MAPPINGS[$id])) {
-                return $this->{'get' . static::MAPPINGS[$id]}();
-            }
-        }
-
-        return parent::get($id);
+        return $this->resolvedDefinitions[$id] ??
+            (isset($this->resolvedFactories[$id]) ?
+                $this->resolvedFactories[$id]() :
+                (isset(static::MAPPINGS[$id])
+                    ? $this->{'get' . static::MAPPINGS[$id]}()
+                    : parent::get($id)
+                )
+            );
     }
 
     public function has($id): bool

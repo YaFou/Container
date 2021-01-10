@@ -11,6 +11,7 @@ use YaFou\Container\Definition\FactoryDefinition;
 use YaFou\Container\Definition\ProxyableInterface;
 use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\CompilationException;
+use YaFou\Container\Exception\RecursiveDependencyDetectedException;
 use YaFou\Container\Exception\WrongOptionException;
 
 class Compiler
@@ -23,6 +24,13 @@ class Compiler
     private $code;
     private $indentation;
 
+    /**
+     * @param array $definitions
+     * @param array $containerOptions
+     * @param array $options
+     * @return string
+     * @throws RecursiveDependencyDetectedException
+     */
     public function compile(array $definitions, array $containerOptions = [], array $options = []): string
     {
         $options = array_merge(
@@ -88,13 +96,16 @@ class Compiler
         }
     }
 
+    /**
+     * @param array $definitions
+     * @param array $options
+     * @return array
+     * @throws RecursiveDependencyDetectedException
+     */
     private function getDefinitions(array $definitions, array $options): array
     {
         $container = new Container($definitions, $options);
-
-        foreach ($definitions as $id => $_) {
-            $container->resolveDefinition($id);
-        }
+        $container->validate();
 
         return $container->getDefinitions();
     }

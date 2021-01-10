@@ -14,7 +14,7 @@ class ProxyManager implements ProxyManagerInterface
         $this->cacheDirectory = $cacheDirectory;
     }
 
-    public function getProxy(string $proxyClass, callable $factory)
+    public function getProxy(string $proxyClass, callable $factory): object
     {
         if (null !== $this->cacheDirectory && file_exists($filename = $this->getFileName($proxyClass))) {
             ob_start();
