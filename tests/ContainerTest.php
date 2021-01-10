@@ -10,11 +10,14 @@ use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Exception\NotFoundException;
+use YaFou\Container\Exception\RecursiveDependencyDetectedException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Proxy\ProxyManagerInterface;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ExtendedContainer;
 use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
+use YaFou\Container\Tests\Fixtures\RecursiveDependency1;
+use YaFou\Container\Tests\Fixtures\RecursiveDependency2;
 
 class ContainerTest extends TestCase
 {
@@ -177,10 +180,12 @@ class ContainerTest extends TestCase
 
     public function testGetDefinitionsWithDefinitions()
     {
-        $container = new Container($definitions = [
-            'id1' => new ValueDefinition(1),
-            'id2' => new ValueDefinition(2)
-                                   ]);
+        $container = new Container(
+            $definitions = [
+                'id1' => new ValueDefinition(1),
+                'id2' => new ValueDefinition(2)
+            ]
+        );
         $this->assertSame($definitions, $container->getDefinitions());
     }
 
@@ -189,5 +194,21 @@ class ContainerTest extends TestCase
         $container = new ExtendedContainer();
         $this->assertSame($container, $container->get(ExtendedContainer::class));
         $this->assertSame($container, $container->get(Container::class));
+    }
+
+    public function testThrowExceptionWhenRecursiveDependencyDetected()
+    {
+        $this->expectException(RecursiveDependencyDetectedException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Recursive dependency detected: %s > %s > %s',
+                RecursiveDependency1::class,
+                RecursiveDependency2::class,
+                RecursiveDependency1::class
+            )
+        );
+
+        $container = new Container();
+        $container->resolveDefinition(RecursiveDependency1::class);
     }
 }

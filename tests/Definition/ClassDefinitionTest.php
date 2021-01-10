@@ -10,8 +10,9 @@ use YaFou\Container\Exception\UnknownArgumentException;
 use YaFou\Container\Tests\Fixtures\AbstractClass;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarParameter;
-use YaFou\Container\Tests\Fixtures\ConstructorWithTwoArguments;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneStringArgument;
+use YaFou\Container\Tests\Fixtures\ExtendedConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\FinalClass;
 use YaFou\Container\Tests\Fixtures\PrivateConstructor;
 
@@ -42,9 +43,9 @@ class ClassDefinitionTest extends TestCase
     {
         $this->expectException(UnknownArgumentException::class);
         $this->expectExceptionMessage(
-            'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarParameter::class . '"'
+            'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarArgument::class . '"'
         );
-        $definition = new ClassDefinition(ConstructorWithOneScalarParameter::class);
+        $definition = new ClassDefinition(ConstructorWithOneScalarArgument::class);
         $definition->resolve(new Container());
     }
 
@@ -96,5 +97,33 @@ class ClassDefinitionTest extends TestCase
     {
         $definition = new ClassDefinition(ConstructorWithNoArgument::class, true, true);
         $this->assertSame(ConstructorWithNoArgument::class, $definition->getProxyClass());
+    }
+
+    public function testGetWithArgumentsWithName()
+    {
+        $definition = new ClassDefinition(ConstructorWithOneScalarArgument::class, true, false, ['scalar' => false]);
+        $this->assertFalse($definition->get(new Container())->scalar);
+    }
+
+    public function testGetWithArgumentsWithIndex()
+    {
+        $definition = new ClassDefinition(ConstructorWithOneScalarArgument::class, true, false, [0 => false]);
+        $this->assertFalse($definition->get(new Container())->scalar);
+    }
+
+    public function testGetWithArgumentsWithId()
+    {
+        $definition = new ClassDefinition(ConstructorWithOneArgument::class, true, false, [0 => '@id']);
+        $container = new Container(['id' => new ClassDefinition(ExtendedConstructorWithNoArgument::class)]);
+        $this->assertInstanceOf(
+            ExtendedConstructorWithNoArgument::class,
+            $definition->get($container)->constructorWithNoArgument
+        );
+    }
+
+    public function testGetWithArgumentsWithEscapedId()
+    {
+        $definition = new ClassDefinition(ConstructorWithOneStringArgument::class, true, false, [0 => '@@id']);
+        $this->assertSame('@id', $definition->get(new Container())->string);
     }
 }

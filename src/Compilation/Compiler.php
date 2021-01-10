@@ -216,25 +216,31 @@ class Compiler
         $this->writeRaw("new \\{$definition->getClass()}(");
         $needComma = false;
 
-        foreach ($definition->getArguments() as $id) {
+        foreach ($definition->getResolvedArguments() as $argument) {
             if ($needComma) {
                 $this->writeRaw(', ');
             } else {
                 $needComma = true;
             }
 
-            $argumentDefinition = $this->definitions[$id];
+            if ($argument[0]) {
+                $argumentDefinition = $this->definitions[$argument[1]];
 
-            if (!$argumentDefinition->isShared()) {
-                $this->generateGetter($argumentDefinition);
+                if (!$argumentDefinition->isShared()) {
+                    $this->generateGetter($argumentDefinition);
+
+                    continue;
+                }
+
+                $this
+                    ->writeRaw('$this->resolvedDefinitions[')
+                    ->subcompile($argument[1])
+                    ->writeRaw("] ?? \$this->get{$this->idsToMapping[$argument[1]]}()");
 
                 continue;
             }
 
-            $this
-                ->writeRaw('$this->resolvedDefinitions[')
-                ->subcompile($id)
-                ->writeRaw("] ?? \$this->get{$this->idsToMapping[$id]}()");
+            $this->subcompile($argument[1]);
         }
 
         return $this->writeRaw(')');
@@ -246,6 +252,14 @@ class Compiler
 
         if (($factory = $definition->getFactory()) instanceof \Closure) {
             $reflection = new ReflectionClosure($definition->getFactory());
+
+            if ($reflection->getUseVariables()) {
+                throw new CompilationException('Cannot compile factory closure which import variables using the "use" keyword');
+            }
+
+            if ($reflection->isBindingRequired() || $reflection->isScopeRequired()) {
+                throw new CompilationException('Cannot compile factory closure which use "$this", "parent", "self", or "static"');
+            }
 
             if (!$reflection->isStatic()) {
                 $this->writeRaw('static ');

@@ -15,7 +15,7 @@ use YaFou\Container\Exception\UnknownArgumentException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarParameter;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
 
 class CompilerTest extends TestCase
 {
@@ -73,10 +73,10 @@ PHP;
     {
         $this->expectException(UnknownArgumentException::class);
         $this->expectExceptionMessage(
-            'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarParameter::class . '"'
+            'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarArgument::class . '"'
         );
         $compiler = new Compiler();
-        $compiler->compile(['id' => new ClassDefinition(ConstructorWithOneScalarParameter::class)]);
+        $compiler->compile(['id' => new ClassDefinition(ConstructorWithOneScalarArgument::class)]);
     }
 
     public function testContainerOptions()
@@ -488,7 +488,7 @@ PHP;
         $compiler->compile([], [], ['class' => null]);
     }
 
-    public function testFoo()
+    public function testOneClassDefinitionSharedAndOneClassDefinitionNotSharedAndLazy()
     {
         $expected = <<<'PHP'
 <?php
@@ -531,5 +531,66 @@ PHP;
             ]
         );
         $this->assertSame($expected, $actual);
+    }
+
+    public function testOneClassDefinitionWithCustomArgument()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+        'id' => 0,
+    ];
+
+    protected function get0()
+    {
+        return $this->resolvedDefinitions['id'] = new \YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument(false);
+    }
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $actual = $compiler->compile(
+            ['id' => new ClassDefinition(ConstructorWithOneScalarArgument::class, true, false, [0 => false])]
+        );
+        $this->assertSame($expected, $actual);
+    }
+
+    public function testFactoryDefinitionWithClosureWithUse()
+    {
+        $this->expectException(CompilationException::class);
+        $this->expectExceptionMessage('Cannot compile factory closure which import variables using the "use" keyword');
+        $compiler = new Compiler();
+        $compiler->compile(
+            [
+                'id' => new FactoryDefinition(
+                    function () use ($compiler) {
+                    }
+                )
+            ]
+        );
+    }
+
+    public function testFactoryDefinitionWithClosureWithThis()
+    {
+        $this->expectException(CompilationException::class);
+        $this->expectExceptionMessage('Cannot compile factory closure which use "$this", "parent", "self", or "static"');
+        $compiler = new Compiler();
+        $compiler->compile(
+            [
+                'id' => new FactoryDefinition(
+                    function () {
+                        $this;
+                    }
+                )
+            ]
+        );
     }
 }

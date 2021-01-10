@@ -9,6 +9,7 @@ use YaFou\Container\Definition\ProxyableInterface;
 use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Exception\NotFoundException;
+use YaFou\Container\Exception\RecursiveDependencyDetectedException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Proxy\ProxyManager;
 use YaFou\Container\Proxy\ProxyManagerInterface;
@@ -21,6 +22,10 @@ class Container implements ContainerInterface
     protected $options;
     protected $resolvedDefinitions = [];
     private $definitions;
+    /**
+     * @var array
+     */
+    private $definitionsInResolving;
 
     public function __construct(array $definitions = [], array $options = [])
     {
@@ -34,13 +39,16 @@ class Container implements ContainerInterface
         );
         $this->validateOptions();
         $selfDefinition = new ValueDefinition($this);
+        $this->definitionsInResolving = [];
 
         if (!isset($this->definitions[ContainerInterface::class])) {
             $this->definitions[ContainerInterface::class] = $selfDefinition;
+            $this->resolvedDefinitions[ContainerInterface::class] = $this;
         }
 
         if (!isset($this->definitions[static::class])) {
             $this->definitions[static::class] = $this->definitions[self::class] = $selfDefinition;
+            $this->resolvedDefinitions[static::class] = $this->resolvedDefinitions[self::class] = $this;
         }
     }
 
@@ -86,16 +94,6 @@ class Container implements ContainerInterface
         throw new NotFoundException(sprintf('The id "%s" was not found', $id));
     }
 
-    private function getProxy(DefinitionInterface $definition)
-    {
-        return $this->options['proxy_manager']->getProxy(
-            $definition->getProxyClass(),
-            function () use ($definition) {
-                return $definition->get($this);
-            }
-        );
-    }
-
     public function has($id): bool
     {
         if (!is_string($id)) {
@@ -110,9 +108,29 @@ class Container implements ContainerInterface
             $this->definitions[$id] = new ClassDefinition($id);
         }
 
+        if (in_array($id, $this->definitionsInResolving)) {
+            $this->definitionsInResolving[] = $id;
+
+            throw new RecursiveDependencyDetectedException(
+                sprintf('Recursive dependency detected: %s', join(' > ', $this->definitionsInResolving))
+            );
+        }
+
+        $this->definitionsInResolving[] = $id;
         $this->definitions[$id]->resolve($this);
+        array_pop($this->definitionsInResolving);
 
         return true;
+    }
+
+    private function getProxy(DefinitionInterface $definition)
+    {
+        return $this->options['proxy_manager']->getProxy(
+            $definition->getProxyClass(),
+            function () use ($definition) {
+                return $definition->get($this);
+            }
+        );
     }
 
     public function resolveDefinition(string $id): void

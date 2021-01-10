@@ -12,7 +12,7 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
      * @var string
      */
     private $class;
-    private $arguments;
+    private $resolvedArguments;
     /**
      * @var bool
      */
@@ -21,59 +21,88 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
      * @var bool
      */
     private $lazy;
+    private $reflection;
+    /**
+     * @var array
+     */
+    private $arguments;
 
-    public function __construct(string $class, bool $shared = true, bool $lazy = false)
+    public function __construct(string $class, bool $shared = true, bool $lazy = false, array $arguments = [])
     {
         if (!class_exists($class)) {
             throw new InvalidArgumentException(sprintf('The class "%s" does not exist', $class));
         }
 
-        $reflection = new \ReflectionClass($class);
+        $this->reflection = new \ReflectionClass($class);
 
-        if (!$reflection->isInstantiable()) {
+        if (!$this->reflection->isInstantiable()) {
             throw new InvalidArgumentException(sprintf('The class "%s" must be instantiable', $class));
         }
 
         $this->class = $class;
         $this->shared = $shared;
         $this->lazy = $lazy;
+        $this->arguments = $arguments;
     }
 
-    public function getArguments(): ?array
+    public function getResolvedArguments(): ?array
     {
-        return $this->arguments;
+        return $this->resolvedArguments;
     }
 
     public function get(Container $container)
     {
         $this->resolve($container);
-        $arguments = array_map(
-            function (string $id) use ($container) {
-                return $container->get($id);
-            },
-            $this->arguments
-        );
 
-        return (new \ReflectionClass($this->class))->newInstanceArgs($arguments);
+        if (null === $constructor = $this->reflection->getConstructor()) {
+            return $this->reflection->newInstance();
+        }
+
+        $arguments = [];
+
+        foreach ($this->resolvedArguments as $argument) {
+            $arguments[] = $argument[0] ? $container->get($argument[1]) : $argument[1];
+        }
+
+        return $this->reflection->newInstanceArgs($arguments);
     }
 
     public function resolve(Container $container): void
     {
-        if (null !== $this->arguments) {
+        if (null !== $this->resolvedArguments) {
             return;
         }
 
-        $this->arguments = [];
-        $constructor = (new \ReflectionClass($this->class))->getConstructor();
+        if (null === $constructor = $this->reflection->getConstructor()) {
+            $this->resolvedArguments = [];
 
-        if (null === $constructor) {
             return;
         }
 
-        foreach ($constructor->getParameters() as $parameter) {
+        $arguments = [];
+
+        foreach ($constructor->getParameters() as $index => $parameter) {
+            if (isset($this->arguments[$name = $parameter->getName()]) || isset($this->arguments[$index])) {
+                $value = $this->arguments[$name] ?? $this->arguments[$index];
+
+                if (is_string($value) && '@' === $value[0]) {
+                    if ('@' !== $value[1]) {
+                        $arguments[] = [true, substr($value, 1)];
+
+                        continue;
+                    }
+
+                    $value = substr($value, 1);
+                }
+
+                $arguments[] = [false, $value];
+
+                continue;
+            }
+
             if (null !== $class = $parameter->getClass()) {
                 $container->resolveDefinition($name = $class->getName());
-                $this->arguments[] = $name;
+                $arguments[] = [true, $name];
 
                 continue;
             }
@@ -82,6 +111,8 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
                 sprintf('Can\'t resolve parameter "%s" of class "%s"', $parameter->getName(), $this->class)
             );
         }
+
+        $this->resolvedArguments = $arguments;
     }
 
     public function isShared(): bool
@@ -96,7 +127,7 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
 
     public function isLazy(): bool
     {
-        return $this->lazy && !(new \ReflectionClass($this->class))->isFinal();
+        return $this->lazy && !$this->reflection->isFinal();
     }
 
     public function getProxyClass(): string
