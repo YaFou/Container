@@ -2,16 +2,24 @@
 
 namespace YaFou\Container\Proxy;
 
+use YaFou\Container\Writer\Writer;
+use YaFou\Container\Writer\WriterInterface;
+
 class ProxyManager implements ProxyManagerInterface
 {
     /**
      * @var string|null
      */
     private $cacheDirectory;
+    /**
+     * @var Writer
+     */
+    private $writer;
 
-    public function __construct(string $cacheDirectory = null)
+    public function __construct(string $cacheDirectory = null, WriterInterface $writer = null)
     {
         $this->cacheDirectory = $cacheDirectory;
+        $this->writer = $writer ?? new Writer();
     }
 
     public function getProxy(string $proxyClass, callable $factory): object
@@ -28,39 +36,48 @@ class ProxyManager implements ProxyManagerInterface
         $reflection = new \ReflectionClass($proxyClass);
         $className = $reflection->getShortName() . '__' . substr(md5(microtime()), rand(0, 26), 5);
 
-        $code = <<<PHP
-namespace __Cache__\\Proxy\\{$reflection->getNamespaceName()};
+        $this->writer
+            ->writeln("namespace __Cache__\\Proxy\\{$reflection->getNamespaceName()};", 2)
+            ->writeln("class $className extends \\$proxyClass")
+            ->write('{')
+            ->indent()
+                ->writeln('private $_factory;')
+                ->writeln('private $_instance;', 2)
+                ->writeln('public function __construct(callable $factory)')
+                ->write('{')
+                ->indent()
+                    ->writeln('$this->_factory = $factory;');
 
-class $className extends \\$proxyClass
-{
-    private \$_factory;
-    private \$_instance;
+        $this->generatePropertiesUnsetters($reflection);
 
-    public function __construct(callable \$factory)
-    {
-        \$this->_factory = \$factory;
-        {$this->getPropertiesUnsettersCode($reflection)}
-    }
-    
-    public function __get(\$name)
-    {
-        return \$this->_getInstance()->\$name;
-    }
-    
-    private function _getInstance(): \\$proxyClass
-    {
-        if (null === \$this->_instance) {
-            \$this->_instance = (\$this->_factory)();
-        }
-    
-        return \$this->_instance;
-    }
-    
-{$this->getMethodsCode($reflection)}
-}
-PHP;
+        $this->writer
+            ->outdent(0)
+            ->writeln('}', 2)
+            ->writeln('public function __get($name)')
+            ->write('{')
+            ->indent()
+                ->write('return $this->_getInstance()->$name;')
+            ->outdent()
+            ->writeln('}', 2)
+            ->writeln('public function _getInstance()')
+            ->write('{')
+            ->indent()
+                ->write('if (null === $this->_instance) {')
+                ->indent()
+                    ->write('$this->_instance = ($this->_factory)();')
+                ->outdent()
+                ->writeln('}', 2)
+                ->write('return $this->_instance;')
+            ->outdent()
+            ->write('}');
 
-        eval($code);
+        $this->generateMethods($reflection);
+
+        $this->writer
+            ->outdent()
+            ->writeln('}');
+
+        eval($code = $this->writer->getCode());
         $proxyClass = '__Cache__\\Proxy\\' . $reflection->getNamespaceName() . '\\' . $className;
 
         if (null !== $this->cacheDirectory) {
@@ -85,21 +102,14 @@ PHP;
         ) . '.php';
     }
 
-    private function getPropertiesUnsettersCode(\ReflectionClass $reflection): string
+    private function generatePropertiesUnsetters(\ReflectionClass $reflection): void
     {
-        $properties = $reflection->getProperties(\ReflectionProperty::IS_PUBLIC);
-
-        $propertiesCode = array_map(
-            function (\ReflectionProperty $property) {
-                return sprintf('unset($this->%s);', $property->getName());
-            },
-            $properties
-        );
-
-        return join("\n", $propertiesCode);
+        foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
+            $this->writer->writeln("unset(\$this->{$property->getName()});");
+        }
     }
 
-    private function getMethodsCode(\ReflectionClass $reflection): string
+    private function generateMethods(\ReflectionClass $reflection): void
     {
         $methods = $reflection->getMethods(\ReflectionMethod::IS_PUBLIC);
         $methods = array_filter(
@@ -109,45 +119,47 @@ PHP;
             }
         );
 
-        $methodsCode = array_map(
-            function (\ReflectionMethod $method) {
-                return <<<PHP
-    public function {$method->getName()}({$this->getParametersCode($method)}){$this->getReturnTypeCode($method)}
-    {
-        return \$this->_getInstance()->{$method->getName()}(...func_get_args());
-    }
-PHP;
-            },
-            $methods
-        );
-
-        return join("\n\n", $methodsCode);
-    }
-
-    private function getParametersCode(\ReflectionMethod $method): string
-    {
-        $parameters = $method->getParameters();
-
-        $parametersCode = array_map(
-            function (\ReflectionParameter $parameter) {
-                $code = '$' . $parameter->getName();
-
-                if ($parameter->isDefaultValueAvailable()) {
-                    $code .= ' = ' . var_export($parameter->getDefaultValue(), true);
-                }
-
-                return $code;
-            },
-            $parameters
-        );
-
-        return join(', ', $parametersCode);
+        foreach ($methods as $method) {
+            $this->writer->newLine(2)->write("public function {$method->getName()}(");
+            $this->generateParameters($method);
+            $this->writer->writeRaw(')');
+            $this->generateReturnType($method);
+            $this->writer
+                ->write('{')
+                ->indent()
+                    ->write("return \$this->_getInstance()->{$method->getName()}(...func_get_args());")
+                ->outdent()
+                ->write('}');
+        }
     }
 
-    private function getReturnTypeCode(\ReflectionMethod $method): string
+    private function generateParameters(\ReflectionMethod $method): void
     {
-        return null !== $method->getReturnType() && $method->getReturnType() instanceof \ReflectionNamedType
-            ? ': ' . $method->getReturnType()->getName()
-            : '';
+        $needComma = false;
+
+        foreach ($method->getParameters() as $parameter) {
+            if ($needComma) {
+                $this->writer->writeRaw(', ');
+            } else {
+                $needComma = true;
+            }
+
+            $this->writer->writeRaw("\${$parameter->getName()}");
+
+            if ($parameter->isDefaultValueAvailable()) {
+                $this->writer
+                    ->writeRaw(' = ')
+                    ->export($parameter->getDefaultValue());
+            }
+        }
+    }
+
+    private function generateReturnType(\ReflectionMethod $method): void
+    {
+        if (null !== $method->getReturnType() && $method->getReturnType() instanceof \ReflectionNamedType) {
+            $this->writer->writeRaw(": {$method->getReturnType()->getName()}");
+        }
+
+        $this->writer->newLine();
     }
 }

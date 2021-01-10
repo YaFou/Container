@@ -3,6 +3,7 @@
 namespace YaFou\Container\Builder;
 
 use YaFou\Container\Compilation\Compiler;
+use YaFou\Container\Compilation\CompilerInterface;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Proxy\ProxyManager;
@@ -17,10 +18,7 @@ class ContainerBuilder
      * @var string
      */
     private $compilationFile;
-    /**
-     * @var array
-     */
-    private $compilationOptions;
+    private $compiler;
 
     public function build(): Container
     {
@@ -31,7 +29,7 @@ class ContainerBuilder
 
         if (null !== $this->compilationFile && file_exists($this->compilationFile)) {
             require_once $this->compilationFile;
-            $class = $this->getCompiledContainerClass();
+            $class = $this->compiler->getCompiledContainerClass();
 
             return new $class($options);
         }
@@ -44,24 +42,18 @@ class ContainerBuilder
         );
 
         if (null !== $this->compilationFile) {
-            $code = (new Compiler())->compile($definitions, $options, $this->compilationOptions);
+            $container = new Container($definitions, $options);
+            $container->validate();
+
+            $code = $this->compiler->compile($container->getDefinitions());
             file_put_contents($this->compilationFile, $code);
             require $this->compilationFile;
-            $class = $this->getCompiledContainerClass();
+            $class = $this->compiler->getCompiledContainerClass();
 
             return new $class($options);
         }
 
         return new Container($definitions, $options);
-    }
-
-    private function getCompiledContainerClass(): string
-    {
-        return sprintf(
-            '%s\%s',
-            $this->compilationOptions['namespace'] ?? '__Cache__',
-            $this->compilationOptions['class'] ?? 'CompiledContainer'
-        );
     }
 
     public function setLocked(bool $locked = true): self
@@ -71,7 +63,7 @@ class ContainerBuilder
         return $this;
     }
 
-    public function setProxyCacheDirectory(?string $directory): self
+    public function enableProxiesCache(?string $directory): self
     {
         return $this->setProxyManager(new ProxyManager($directory));
     }
@@ -110,10 +102,17 @@ class ContainerBuilder
         return $this;
     }
 
-    public function enableCompilation(string $file, array $options = []): self
+    public function enableCompilation(string $file, array $compilerOptions = []): self
     {
         $this->compilationFile = $file;
-        $this->compilationOptions = $options;
+        $this->compiler = new Compiler($compilerOptions);
+
+        return $this;
+    }
+
+    public function setCompiler(CompilerInterface $compiler): self
+    {
+        $this->compiler = $compiler;
 
         return $this;
     }

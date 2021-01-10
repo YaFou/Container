@@ -2,87 +2,56 @@
 
 namespace YaFou\Container\Compilation;
 
-use Opis\Closure\ReflectionClosure;
-use YaFou\Container\Container;
-use YaFou\Container\Definition\AliasDefinition;
-use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
-use YaFou\Container\Definition\FactoryDefinition;
 use YaFou\Container\Definition\ProxyableInterface;
-use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\CompilationException;
-use YaFou\Container\Exception\RecursiveDependencyDetectedException;
 use YaFou\Container\Exception\WrongOptionException;
+use YaFou\Container\Writer\Writer;
+use YaFou\Container\Writer\WriterInterface;
 
-class Compiler
+class Compiler implements CompilerInterface
 {
     /**
      * @var array
      */
     private $definitions;
     private $idsToMapping;
-    private $code;
-    private $indentation;
-
+    private $writer;
     /**
-     * @param array $definitions
-     * @param array $containerOptions
-     * @param array $options
-     * @return string
-     * @throws RecursiveDependencyDetectedException
+     * @var array
      */
-    public function compile(array $definitions, array $containerOptions = [], array $options = []): string
+    private $options;
+    /**
+     * @var array
+     */
+    private $definitionCompilers;
+    private $resolvedDefinitionCompilers = [];
+
+    public function __construct(array $options = [])
     {
         $options = array_merge(
             [
                 'namespace' => '__Cache__',
-                'class' => 'CompiledContainer'
+                'class' => 'CompiledContainer',
+                'writer' => new Writer()
             ],
             $options
         );
 
+        $options['definition_compilers'] = array_merge(
+            [
+                new ClassDefinitionCompiler(),
+                new AliasDefinitionCompiler(),
+                new ValueDefinitionCompiler(),
+                new FactoryDefinitionCompiler()
+            ],
+            $options['definition_compilers'] ?? []
+        );
+
         $this->validateOptions($options);
-        $this->definitions = $this->getDefinitions($definitions, $containerOptions);
-        $mappingIndex = 0;
-        $this->idsToMapping = [];
-
-        $this
-            ->writeln('<?php')
-            ->newLine()
-            ->writeln("namespace {$options['namespace']};")
-            ->newLine()
-            ->writeln('use YaFou\Container\Compilation\AbstractCompiledContainer;')
-            ->newLine()
-            ->writeln("class {$options['class']} extends AbstractCompiledContainer")
-            ->write('{')
-            ->indent()
-            ->write('protected const MAPPINGS = [')
-            ->indent(false);
-
-        foreach ($this->definitions as $id => $definition) {
-            $this
-                ->newLine()
-                ->write('')
-                ->subcompile($id)
-                ->writeRaw(' => ' . $mappingIndex . ',');
-
-            $this->idsToMapping[$id] = $mappingIndex;
-            $mappingIndex++;
-        }
-
-        $this
-            ->outdent()
-            ->write('];');
-
-        foreach ($this->definitions as $id => $definition) {
-            $this->generateMethod($this->idsToMapping[$id], $id, $definition);
-        }
-
-        $this
-            ->outdent()
-            ->writeln('}');
-
-        return $this->code;
+        $this->options = $options;
+        $this->writer = $options['writer'];
+        $this->definitionCompilers = $options['definition_compilers'];
     }
 
     private function validateOptions(array $options): void
@@ -94,197 +63,148 @@ class Compiler
         if (!is_string($options['class'])) {
             throw new WrongOptionException('The class option must be a string');
         }
+
+        if (!$options['writer'] instanceof WriterInterface) {
+            throw new WrongOptionException('The writer option must be an instanceof ' . WriterInterface::class);
+        }
+
+        foreach ($options['definition_compilers'] as $definitionCompiler) {
+            if (!$definitionCompiler instanceof DefinitionCompilerInterface) {
+                throw new WrongOptionException(
+                    'The definition_compilers option must be an array of class instanceof ' . DefinitionCompilerInterface::class
+                );
+            }
+        }
+    }
+
+    public function getDefinitions(): array
+    {
+        return $this->definitions;
+    }
+
+    public function getIdsToMapping(): array
+    {
+        return $this->idsToMapping;
     }
 
     /**
      * @param array $definitions
-     * @param array $options
-     * @return array
-     * @throws RecursiveDependencyDetectedException
+     * @return string
      */
-    private function getDefinitions(array $definitions, array $options): array
+    public function compile(array $definitions): string
     {
-        $container = new Container($definitions, $options);
-        $container->validate();
+        $this->definitions = $definitions;
+        $mappingIndex = 0;
+        $this->idsToMapping = [];
 
-        return $container->getDefinitions();
-    }
+        $this->writer
+            ->writeln('<?php', 2)
+            ->writeln("namespace {$this->options['namespace']};", 2)
+            ->writeln('use YaFou\Container\Compilation\AbstractCompiledContainer;', 2)
+            ->writeln("class {$this->options['class']} extends AbstractCompiledContainer")
+            ->write('{')
+            ->indent()
+            ->write('protected const MAPPINGS = [')
+            ->indent(0);
 
-    private function indent(bool $newLine = true): self
-    {
-        $this->indentation++;
+        foreach ($this->definitions as $id => $definition) {
+            $this->writer
+                ->newLine()
+                ->write('')
+                ->export($id)
+                ->writeRaw(' => ' . $mappingIndex . ',');
 
-        return $newLine ? $this->newLine() : $this;
-    }
+            $this->idsToMapping[$id] = $mappingIndex;
+            $mappingIndex++;
+        }
 
-    private function newLine(): self
-    {
-        return $this->writeRaw("\n");
-    }
+        $this->writer
+            ->outdent()
+            ->write('];');
 
-    private function writeRaw(string $code): self
-    {
-        $this->code .= $code;
+        foreach ($this->definitions as $id => $definition) {
+            $this->generateMethod($this->idsToMapping[$id], $id, $definition);
+        }
 
-        return $this;
-    }
+        $this->writer
+            ->outdent()
+            ->writeln('}');
 
-    private function write(string $code): self
-    {
-        return $this->writeRaw(str_repeat(' ', $this->indentation * 4) . $code);
-    }
-
-    private function writeln(string $code): self
-    {
-        return $this->write($code)->newLine();
-    }
-
-    private function subcompile($value): self
-    {
-        return $this->writeRaw(var_export($value, true));
-    }
-
-    private function outdent(bool $newLine = true): self
-    {
-        $this->indentation--;
-
-        return $newLine ? $this->newLine() : $this;
+        return $this->writer->getCode();
     }
 
     private function generateMethod(int $mappingIndex, string $id, DefinitionInterface $definition): void
     {
-        $this
-            ->newLine()
-            ->newLine()
+        $this->writer
+            ->newLine(2)
             ->writeln("protected function get$mappingIndex()")
             ->write('{')
             ->indent();
 
         if ($definition->isShared()) {
-            $this
+            $this->writer
                 ->write('return $this->resolvedDefinitions[')
-                ->subcompile($id)
+                ->export($id)
                 ->writeRaw('] = ');
         } else {
-            $this
+            $this->writer
                 ->write('return ($this->resolvedFactories[')
-                ->subcompile($id)
+                ->export($id)
                 ->writeRaw('] = function () {')
                 ->indent()
                 ->write('return ');
         }
 
-        $this
-            ->generateGetter($definition)
-            ->writeRaw(';');
+        $this->generateGetter($definition);
+        $this->writer->writeRaw(';');
 
         if (!$definition->isShared()) {
-            $this
+            $this->writer
                 ->outdent()
                 ->write('})();');
         }
 
-        $this
+        $this->writer
             ->outdent()
             ->write('}');
     }
 
-    private function generateGetter(DefinitionInterface $definition): self
+    public function generateGetter(DefinitionInterface $definition): void
     {
         if ($lazy = ($definition instanceof ProxyableInterface && $definition->isLazy())) {
-            $this
+            $this->writer
                 ->writeRaw('$this->options[\'proxy_manager\']->getProxy(')
-                ->subcompile($definition->getProxyClass())
+                ->export($definition->getProxyClass())
                 ->writeRaw(', function () {')
                 ->indent()
                 ->write('return ');
         }
 
-        if ($definition instanceof ClassDefinition) {
-            $this->generateClassGetter($definition);
-        } elseif ($definition instanceof FactoryDefinition) {
-            $this->generateFactoryGetter($definition);
-        } elseif ($definition instanceof ValueDefinition) {
-            $this->subcompile($definition->getValue());
-        } elseif ($definition instanceof AliasDefinition) {
-            $this->generateGetter($this->definitions[$definition->getAlias()]);
-        } else {
-            throw new CompilationException(sprintf('Definition of type "%s" is not supported', get_class($definition)));
+        if (isset($this->resolvedDefinitionCompilers[$definitionClass = get_class($definition)])) {
+            $this->resolvedDefinitionCompilers[$definitionClass]->compile($definition, $this, $this->writer);
         }
 
-        if ($lazy) {
-            $this
-                ->writeRaw(';')
-                ->outdent()
-                ->write('})');
-        }
+        foreach ($this->definitionCompilers as $definitionCompiler) {
+            if ($definitionCompiler->supports($definition)) {
+                $this->resolvedDefinitionCompilers[$definitionClass] = $definitionCompiler;
+                $definitionCompiler->compile($definition, $this, $this->writer);
 
-        return $this;
-    }
-
-    private function generateClassGetter(ClassDefinition $definition): self
-    {
-        $this->writeRaw("new \\{$definition->getClass()}(");
-        $needComma = false;
-
-        foreach ($definition->getResolvedArguments() as $argument) {
-            if ($needComma) {
-                $this->writeRaw(', ');
-            } else {
-                $needComma = true;
-            }
-
-            if ($argument[0]) {
-                $argumentDefinition = $this->definitions[$argument[1]];
-
-                if (!$argumentDefinition->isShared()) {
-                    $this->generateGetter($argumentDefinition);
-
-                    continue;
+                if ($lazy) {
+                    $this->writer
+                        ->writeRaw(';')
+                        ->outdent()
+                        ->write('})');
                 }
 
-                $this
-                    ->writeRaw('$this->resolvedDefinitions[')
-                    ->subcompile($argument[1])
-                    ->writeRaw("] ?? \$this->get{$this->idsToMapping[$argument[1]]}()");
-
-                continue;
+                return;
             }
-
-            $this->subcompile($argument[1]);
         }
 
-        return $this->writeRaw(')');
+        throw new CompilationException(sprintf('No compiler found for definition of type %s', get_class($definition)));
     }
 
-    private function generateFactoryGetter(FactoryDefinition $definition): self
+    public function getCompiledContainerClass(): string
     {
-        $this->writeRaw('(');
-
-        if (($factory = $definition->getFactory()) instanceof \Closure) {
-            $reflection = new ReflectionClosure($definition->getFactory());
-
-            if ($reflection->getUseVariables()) {
-                throw new CompilationException(
-                    'Cannot compile factory closure which import variables using the "use" keyword'
-                );
-            }
-
-            if ($reflection->isBindingRequired() || $reflection->isScopeRequired()) {
-                throw new CompilationException(
-                    'Cannot compile factory closure which use "$this", "parent", "self", or "static"'
-                );
-            }
-
-            if (!$reflection->isStatic()) {
-                $this->writeRaw('static ');
-            }
-
-            $this->writeRaw($reflection->getCode());
-        } else {
-            $this->subcompile($factory);
-        }
-
-        return $this->writeRaw(')($this)');
+        return $this->options['namespace'] . '\\' . $this->options['class'];
     }
 }

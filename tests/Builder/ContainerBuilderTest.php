@@ -8,6 +8,7 @@ use YaFou\Container\Builder\ClassDefinitionBuilder;
 use YaFou\Container\Builder\ContainerBuilder;
 use YaFou\Container\Builder\FactoryDefinitionBuilder;
 use YaFou\Container\Builder\ValueDefinitionBuilder;
+use YaFou\Container\Compilation\CompilerInterface;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\AliasDefinition;
 use YaFou\Container\Definition\ClassDefinition;
@@ -54,15 +55,15 @@ class ContainerBuilderTest extends TestCase
         $this->assertEquals(new Container([], ['proxy_manager' => new ProxyManager()]), $builder->build());
     }
 
-    public function testSetProxyCacheDirectory()
+    public function testEnableProxiesCache()
     {
-        $builder = (new ContainerBuilder())->setProxyCacheDirectory('directory');
+        $builder = (new ContainerBuilder())->enableProxiesCache('directory');
         $this->assertEquals(new Container([], ['proxy_manager' => new ProxyManager('directory')]), $builder->build());
     }
 
     public function testSetDefaultProxyCacheDirectory()
     {
-        $builder = (new ContainerBuilder())->setProxyCacheDirectory('directory')->setProxyCacheDirectory(null);
+        $builder = (new ContainerBuilder())->enableProxiesCache('directory')->enableProxiesCache(null);
         $this->assertEquals(new Container(), $builder->build());
     }
 
@@ -151,7 +152,7 @@ class ContainerBuilderTest extends TestCase
     public function testEnableCompilation()
     {
         $file = sys_get_temp_dir(
-        ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
         @mkdir(dirname($file));
         $container = (new ContainerBuilder())
             ->enableCompilation($file)
@@ -165,13 +166,46 @@ class ContainerBuilderTest extends TestCase
     public function testEnableCompilationWithOptions()
     {
         $file = sys_get_temp_dir(
-        ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
         @mkdir(dirname($file));
         $container = (new ContainerBuilder())
             ->enableCompilation($file, ['class' => 'CustomClass', 'namespace' => 'CustomNamespace'])
             ->build();
         $this->assertInstanceOf('CustomNamespace\\CustomClass', $container);
-        $this->assertFileExists($file);
+        @unlink($file);
+        @rmdir(dirname($file));
+    }
+
+    public function testSetCompiler()
+    {
+        $code = <<<'PHP'
+<?php
+
+class CompiledContainer extends \YaFou\Container\Compilation\AbstractCompiledContainer
+{
+    public function get($id)
+    {
+        return 'value';
+    }
+}
+PHP;
+
+        $compiler = $this->createMock(CompilerInterface::class);
+        $compiler->method('compile')->willReturn($code);
+        $compiler->method('getCompiledContainerClass')->willReturn('CompiledContainer');
+
+        $file = sys_get_temp_dir(
+            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+        @mkdir(dirname($file));
+
+        $container = (new ContainerBuilder())
+            ->enableCompilation($file)
+            ->setCompiler($compiler)
+            ->build();
+
+        $this->assertInstanceOf('CompiledContainer', $container);
+        $this->assertSame('value', $container->get('id'));
+
         @unlink($file);
         @rmdir(dirname($file));
     }

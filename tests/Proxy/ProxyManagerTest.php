@@ -4,12 +4,14 @@ namespace YaFou\Container\Tests\Proxy;
 
 use PHPUnit\Framework\TestCase;
 use YaFou\Container\Proxy\ProxyManager;
+use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicMethod;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicMethodWithDefaultValueParameter;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicMethodWithParameters;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicMethodWithReturnType;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicProperty;
+use YaFou\Container\Writer\Writer;
 
 class ProxyManagerTest extends TestCase
 {
@@ -101,5 +103,13 @@ class ProxyManagerTest extends TestCase
         }
 
         rmdir($directory);
+    }
+
+    public function testCustomWriter()
+    {
+        $writer = $this->getMockBuilder(Writer::class)->onlyMethods(['newLine'])->getMock();
+        $writer->expects($this->atLeastOnce())->method('newLine')->willReturnSelf();
+        $manager = new ProxyManager(null, $writer);
+        $manager->getProxy(ConstructorWithNoArgument::class, function() {});
     }
 }
