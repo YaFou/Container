@@ -99,4 +99,10 @@ class WriterTest extends TestCase
 
         $this->assertSame("\n    code 1\n\ncode 2", $writer->getCode());
     }
+
+    public function testClear()
+    {
+        $writer = (new Writer())->writeRaw('code')->clear();
+        $this->assertEmpty($writer->getCode());
+    }
 }

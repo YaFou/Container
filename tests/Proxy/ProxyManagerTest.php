@@ -5,6 +5,7 @@ namespace YaFou\Container\Tests\Proxy;
 use PHPUnit\Framework\TestCase;
 use YaFou\Container\Proxy\ProxyManager;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
 use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicMethod;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicMethodWithDefaultValueParameter;
@@ -110,6 +111,29 @@ class ProxyManagerTest extends TestCase
         $writer = $this->getMockBuilder(Writer::class)->onlyMethods(['newLine'])->getMock();
         $writer->expects($this->atLeastOnce())->method('newLine')->willReturnSelf();
         $manager = new ProxyManager(null, $writer);
-        $manager->getProxy(ConstructorWithNoArgument::class, function() {});
+        $manager->getProxy(
+            ConstructorWithNoArgument::class,
+            function () {
+            }
+        );
+    }
+
+    public function testGetProxyTwoTimes()
+    {
+        $manager = new ProxyManager();
+
+        $proxy = $manager->getProxy(
+            ConstructorWithNoArgument::class,
+            function () {}
+        );
+
+        $this->assertInstanceOf(ConstructorWithNoArgument::class, $proxy);
+
+        $proxy = $manager->getProxy(
+            ConstructorWithOneArgument::class,
+            function () {}
+        );
+
+        $this->assertInstanceOf(ConstructorWithOneArgument::class, $proxy);
     }
 }

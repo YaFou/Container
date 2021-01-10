@@ -15,6 +15,7 @@ class ProxyManager implements ProxyManagerInterface
      * @var Writer
      */
     private $writer;
+    private $cache = [];
 
     public function __construct(string $cacheDirectory = null, WriterInterface $writer = null)
     {
@@ -34,50 +35,56 @@ class ProxyManager implements ProxyManagerInterface
         }
 
         $reflection = new \ReflectionClass($proxyClass);
-        $className = $reflection->getShortName() . '__' . substr(md5(microtime()), rand(0, 26), 5);
 
-        $this->writer
-            ->writeln("namespace __Cache__\\Proxy\\{$reflection->getNamespaceName()};", 2)
-            ->writeln("class $className extends \\$proxyClass")
-            ->write('{')
-            ->indent()
+        if (!isset($this->cache[$proxyClass])) {
+            $className = $reflection->getShortName() . '__' . substr(md5(microtime()), rand(0, 26), 5);
+
+            $this->writer
+                ->clear()
+                ->writeln("namespace __Cache__\\Proxy\\{$reflection->getNamespaceName()};", 2)
+                ->writeln("class $className extends \\$proxyClass")
+                ->write('{')
+                ->indent()
                 ->writeln('private $_factory;')
                 ->writeln('private $_instance;', 2)
                 ->writeln('public function __construct(callable $factory)')
                 ->write('{')
                 ->indent()
-                    ->writeln('$this->_factory = $factory;');
+                ->writeln('$this->_factory = $factory;');
 
-        $this->generatePropertiesUnsetters($reflection);
+            $this->generatePropertiesUnsetters($reflection);
 
-        $this->writer
-            ->outdent(0)
-            ->writeln('}', 2)
-            ->writeln('public function __get($name)')
-            ->write('{')
-            ->indent()
+            $this->writer
+                ->outdent(0)
+                ->writeln('}', 2)
+                ->writeln('public function __get($name)')
+                ->write('{')
+                ->indent()
                 ->write('return $this->_getInstance()->$name;')
-            ->outdent()
-            ->writeln('}', 2)
-            ->writeln('public function _getInstance()')
-            ->write('{')
-            ->indent()
+                ->outdent()
+                ->writeln('}', 2)
+                ->writeln('public function _getInstance()')
+                ->write('{')
+                ->indent()
                 ->write('if (null === $this->_instance) {')
                 ->indent()
-                    ->write('$this->_instance = ($this->_factory)();')
+                ->write('$this->_instance = ($this->_factory)();')
                 ->outdent()
                 ->writeln('}', 2)
                 ->write('return $this->_instance;')
-            ->outdent()
-            ->write('}');
+                ->outdent()
+                ->write('}');
 
-        $this->generateMethods($reflection);
+            $this->generateMethods($reflection);
 
-        $this->writer
-            ->outdent()
-            ->writeln('}');
+            $this->writer
+                ->outdent()
+                ->writeln('}');
 
-        eval($code = $this->writer->getCode());
+            $this->cache[$proxyClass] = $this->writer->getCode();
+        }
+
+        eval($code = $this->cache[$proxyClass]);
         $proxyClass = '__Cache__\\Proxy\\' . $reflection->getNamespaceName() . '\\' . $className;
 
         if (null !== $this->cacheDirectory) {

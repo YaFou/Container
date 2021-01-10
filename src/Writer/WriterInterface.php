@@ -19,4 +19,6 @@ interface WriterInterface
     public function outdent(int $newLine = 1): self;
 
     public function getCode(): string;
+
+    public function clear(): self;
 }

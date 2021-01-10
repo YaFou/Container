@@ -331,4 +331,26 @@ PHP;
         );
         new Compiler(['definition_compilers' => [new \stdClass()]]);
     }
+
+    public function testCompileTwoTimes()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+    ];
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $this->assertSame($expected, $compiler->compile([]));
+        $this->assertSame($expected, $compiler->compile([]));
+    }
 }

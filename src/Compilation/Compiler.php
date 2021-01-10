@@ -16,6 +16,9 @@ class Compiler implements CompilerInterface
      */
     private $definitions;
     private $idsToMapping;
+    /**
+     * @var WriterInterface
+     */
     private $writer;
     /**
      * @var array
@@ -96,6 +99,7 @@ class Compiler implements CompilerInterface
         $this->definitions = $definitions;
         $mappingIndex = 0;
         $this->idsToMapping = [];
+        $this->writer->clear();
 
         $this->writer
             ->writeln('<?php', 2)

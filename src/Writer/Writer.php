@@ -55,4 +55,11 @@ class Writer implements WriterInterface
 
         return $this->newLine($newLine);
     }
+
+    public function clear(): WriterInterface
+    {
+        $this->code = '';
+
+        return $this;
+    }
 }
