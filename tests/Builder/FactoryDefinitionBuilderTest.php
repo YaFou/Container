@@ -35,7 +35,8 @@ class FactoryDefinitionBuilderTest extends TestCase
         $this->assertEquals(
             new FactoryDefinition(
                 function () {
-                }, false
+                },
+                false
             ),
             $builder->build()
         );
@@ -66,7 +67,10 @@ class FactoryDefinitionBuilderTest extends TestCase
         $this->assertEquals(
             new FactoryDefinition(
                 function () {
-                }, true, ConstructorWithNoArgument::class, true
+                },
+                true,
+                ConstructorWithNoArgument::class,
+                true
             ),
             $builder->build()
         );
@@ -82,7 +86,9 @@ class FactoryDefinitionBuilderTest extends TestCase
         $this->assertEquals(
             new FactoryDefinition(
                 function () {
-                }, true, ConstructorWithNoArgument::class
+                },
+                true,
+                ConstructorWithNoArgument::class
             ),
             $builder->build()
         );

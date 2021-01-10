@@ -108,7 +108,7 @@ class Compiler
 
     private function newLine(): self
     {
-        return $this->writeRaw(PHP_EOL);
+        return $this->writeRaw("\n");
     }
 
     private function writeRaw(string $code): self
@@ -254,11 +254,15 @@ class Compiler
             $reflection = new ReflectionClosure($definition->getFactory());
 
             if ($reflection->getUseVariables()) {
-                throw new CompilationException('Cannot compile factory closure which import variables using the "use" keyword');
+                throw new CompilationException(
+                    'Cannot compile factory closure which import variables using the "use" keyword'
+                );
             }
 
             if ($reflection->isBindingRequired() || $reflection->isScopeRequired()) {
-                throw new CompilationException('Cannot compile factory closure which use "$this", "parent", "self", or "static"');
+                throw new CompilationException(
+                    'Cannot compile factory closure which use "$this", "parent", "self", or "static"'
+                );
             }
 
             if (!$reflection->isStatic()) {

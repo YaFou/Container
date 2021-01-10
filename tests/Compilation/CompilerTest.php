@@ -581,7 +581,9 @@ PHP;
     public function testFactoryDefinitionWithClosureWithThis()
     {
         $this->expectException(CompilationException::class);
-        $this->expectExceptionMessage('Cannot compile factory closure which use "$this", "parent", "self", or "static"');
+        $this->expectExceptionMessage(
+            'Cannot compile factory closure which use "$this", "parent", "self", or "static"'
+        );
         $compiler = new Compiler();
         $compiler->compile(
             [

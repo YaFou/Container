@@ -148,8 +148,8 @@ class Container implements ContainerInterface
             if (
                 !$definition instanceof ValueDefinition ||
                 (
-                    ContainerInterface::class !== $id
-                    && Container::class !== $id &&
+                    ContainerInterface::class !== $id &&
+                    Container::class !== $id &&
                     $this !== $definition->getValue()
                 )
             ) {

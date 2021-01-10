@@ -54,7 +54,10 @@ class ClassDefinitionBuilderTest extends TestCase
             ->argument(0, 'value3');
 
         $definition = new ClassDefinition(
-            ConstructorWithNoArgument::class, true, false, [0 => 'value3', 1 => 'value2']
+            ConstructorWithNoArgument::class,
+            true,
+            false,
+            [0 => 'value3', 1 => 'value2']
         );
         $this->assertEquals($definition, $builder->build());
     }

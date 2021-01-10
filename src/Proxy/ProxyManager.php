@@ -22,7 +22,7 @@ class ProxyManager implements ProxyManagerInterface
             $class = ob_get_clean();
             var_dump($class);
 
-            return new $class($container, $proxyable);
+            return new $class($factory);
         }
 
         $reflection = new \ReflectionClass($proxyClass);
@@ -79,10 +79,10 @@ PHP;
     private function getFileName(string $proxyClass): string
     {
         return $this->cacheDirectory . DIRECTORY_SEPARATOR . str_replace(
-                '\\',
-                DIRECTORY_SEPARATOR,
-                $proxyClass
-            ) . '.php';
+            '\\',
+            DIRECTORY_SEPARATOR,
+            $proxyClass
+        ) . '.php';
     }
 
     private function getPropertiesUnsettersCode(\ReflectionClass $reflection): string
@@ -146,6 +146,8 @@ PHP;
 
     private function getReturnTypeCode(\ReflectionMethod $method): string
     {
-        return null !== $method->getReturnType() ? ': ' . $method->getReturnType()->getName() : '';
+        return null !== $method->getReturnType() && $method->getReturnType() instanceof \ReflectionNamedType
+            ? ': ' . $method->getReturnType()->getName()
+            : '';
     }
 }
