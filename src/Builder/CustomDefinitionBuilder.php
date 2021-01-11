@@ -4,7 +4,7 @@ namespace YaFou\Container\Builder;
 
 use YaFou\Container\Definition\DefinitionInterface;
 
-class CustomDefinitionBuilder implements DefinitionBuilderInterface
+class CustomDefinitionBuilder extends AbstractDefinitionBuilder
 {
     /**
      * @var DefinitionInterface

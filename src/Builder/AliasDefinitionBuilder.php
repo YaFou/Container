@@ -5,7 +5,7 @@ namespace YaFou\Container\Builder;
 use YaFou\Container\Definition\AliasDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
 
-class AliasDefinitionBuilder implements DefinitionBuilderInterface
+class AliasDefinitionBuilder extends AbstractDefinitionBuilder
 {
     /**
      * @var string

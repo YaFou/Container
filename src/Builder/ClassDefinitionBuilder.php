@@ -6,7 +6,7 @@ use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Exception\InvalidArgumentException;
 
-class ClassDefinitionBuilder implements DefinitionBuilderInterface, BindingAwareInterface
+class ClassDefinitionBuilder extends AbstractDefinitionBuilder implements BindingAwareInterface
 {
     use SharedBuilderTrait;
     use LazyBuilderTrait;

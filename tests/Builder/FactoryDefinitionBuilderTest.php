@@ -2,8 +2,8 @@
 
 namespace YaFou\Container\Tests\Builder;
 
-use PHPUnit\Framework\TestCase;
-use YaFou\Container\Builder\ClassDefinitionBuilder;
+use YaFou\Container\Builder\AbstractDefinitionBuilder;
+use YaFou\Container\Builder\DefinitionBuilderInterface;
 use YaFou\Container\Builder\FactoryDefinitionBuilder;
 use YaFou\Container\Definition\FactoryDefinition;
 use YaFou\Container\Tests\Fixtures\Builder\NoParentInterface1;
@@ -17,7 +17,7 @@ use YaFou\Container\Tests\Fixtures\Builder\OneParentNoInterface;
 use YaFou\Container\Tests\Fixtures\Builder\TwoParentsNoInterface;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 
-class FactoryDefinitionBuilderTest extends TestCase
+class FactoryDefinitionBuilderTest extends AbstractDefinitionBuilderTest
 {
     public function testBuild()
     {
@@ -151,5 +151,13 @@ class FactoryDefinitionBuilderTest extends TestCase
             NoParentOneInterfaceOneSubInterface::class,
             [OneParentInterface::class, NoParentInterface1::class]
         ];
+    }
+
+    protected function makeDefinition(): AbstractDefinitionBuilder
+    {
+        return new FactoryDefinitionBuilder(
+            function () {
+            }
+        );
     }
 }

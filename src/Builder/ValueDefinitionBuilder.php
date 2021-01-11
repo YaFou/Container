@@ -5,7 +5,7 @@ namespace YaFou\Container\Builder;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\ValueDefinition;
 
-class ValueDefinitionBuilder implements DefinitionBuilderInterface
+class ValueDefinitionBuilder extends AbstractDefinitionBuilder
 {
     private $value;
 

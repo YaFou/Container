@@ -5,7 +5,7 @@ namespace YaFou\Container\Builder;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\FactoryDefinition;
 
-class FactoryDefinitionBuilder implements DefinitionBuilderInterface
+class FactoryDefinitionBuilder extends AbstractDefinitionBuilder
 {
     use SharedBuilderTrait;
     use LazyBuilderTrait;
