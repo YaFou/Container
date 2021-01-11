@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use YaFou\Container\Builder\AliasDefinitionBuilder;
 use YaFou\Container\Builder\ClassDefinitionBuilder;
 use YaFou\Container\Builder\ContainerBuilder;
+use YaFou\Container\Builder\ContainerProcessorInterface;
 use YaFou\Container\Builder\FactoryDefinitionBuilder;
 use YaFou\Container\Builder\ValueDefinitionBuilder;
 use YaFou\Container\Compilation\CompilerInterface;
@@ -263,16 +264,37 @@ PHP;
 
     public function testClassWithNoClassArgumentDefined()
     {
-        $container = new ContainerBuilder();
+        $builder = new ContainerBuilder();
 
         $this->assertEquals(
             new ClassDefinitionBuilder(ConstructorWithNoArgument::class),
-            $container->class(ConstructorWithNoArgument::class)
+            $builder->class(ConstructorWithNoArgument::class)
         );
 
         $this->assertEquals(
             new Container([ConstructorWithNoArgument::class => new ClassDefinition(ConstructorWithNoArgument::class)]),
-            $container->build()
+            $builder->build()
         );
+    }
+
+    public function testAddProcessors()
+    {
+        $processor1 = $this->createMock(ContainerProcessorInterface::class);
+        $processor1->method('process')->willReturnCallback(function (array &$definitions) {
+            unset($definitions['id1']);
+        });
+
+        $processor2 = $this->createMock(ContainerProcessorInterface::class);
+        $processor2->method('process')->willReturnCallback(function (array &$definitions) {
+            unset($definitions['id2']);
+        });
+
+        $builder = (new ContainerBuilder())->addProcessors($processor1, $processor2);
+        $builder->class('id1', ConstructorWithNoArgument::class);
+        $builder->class('id2', ConstructorWithNoArgument::class);
+        $builder->class('id3', ConstructorWithNoArgument::class);
+
+        $container = new Container(['id3' => new ClassDefinition(ConstructorWithNoArgument::class)]);
+        $this->assertEquals($container, $builder->build());
     }
 }

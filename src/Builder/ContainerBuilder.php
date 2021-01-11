@@ -24,6 +24,7 @@ class ContainerBuilder
      * @var bool
      */
     private $autoBinding = true;
+    private $processors = [];
 
     public function build(): Container
     {
@@ -48,18 +49,6 @@ class ContainerBuilder
         return $container;
     }
 
-    private function compile(Container $container, array $options): Container
-    {
-        $container->validate();
-
-        $code = $this->compiler->compile($container->getDefinitions());
-        file_put_contents($this->compilationFile, $code);
-        require $this->compilationFile;
-        $class = $this->compiler->getCompiledContainerClass();
-
-        return new $class($options);
-    }
-
     private function getDefinitions(): array
     {
         $bindings = [];
@@ -81,7 +70,23 @@ class ContainerBuilder
             }
         }
 
+        foreach ($this->processors as $processor) {
+            $processor->process($definitions);
+        }
+
         return $definitions;
+    }
+
+    private function compile(Container $container, array $options): Container
+    {
+        $container->validate();
+
+        $code = $this->compiler->compile($container->getDefinitions());
+        file_put_contents($this->compilationFile, $code);
+        require $this->compilationFile;
+        $class = $this->compiler->getCompiledContainerClass();
+
+        return new $class($options);
     }
 
     public function setLocked(bool $locked = true): self
@@ -148,6 +153,13 @@ class ContainerBuilder
     public function disableAutoBinding(): self
     {
         $this->autoBinding = false;
+
+        return $this;
+    }
+
+    public function addProcessors(ContainerProcessorInterface ...$processors): self
+    {
+        $this->processors = array_merge($this->processors, $processors);
 
         return $this;
     }
