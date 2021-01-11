@@ -24,7 +24,12 @@ class ContainerBuilder
      * @var bool
      */
     private $autoBinding = true;
-    private $processors = [];
+    private $processors;
+
+    public function __construct()
+    {
+        $this->processors = [new TagArgumentContainerProcessor()];
+    }
 
     public function build(): Container
     {
@@ -51,6 +56,10 @@ class ContainerBuilder
 
     private function getDefinitions(): array
     {
+        foreach ($this->processors as $processor) {
+            $processor->process($this->definitions);
+        }
+
         $bindings = [];
         $definitions = [];
 
@@ -68,10 +77,6 @@ class ContainerBuilder
             if (1 === count($binding) && !isset($definitions[$id])) {
                 $definitions[$id] = new AliasDefinition($binding[0]);
             }
-        }
-
-        foreach ($this->processors as $processor) {
-            $processor->process($definitions);
         }
 
         return $definitions;

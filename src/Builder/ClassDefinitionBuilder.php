@@ -45,4 +45,9 @@ class ClassDefinitionBuilder extends AbstractDefinitionBuilder implements Bindin
 
         return $this;
     }
+
+    public function getArguments(): array
+    {
+        return $this->arguments;
+    }
 }

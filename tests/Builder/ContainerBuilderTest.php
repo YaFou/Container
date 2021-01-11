@@ -280,14 +280,18 @@ PHP;
     public function testAddProcessors()
     {
         $processor1 = $this->createMock(ContainerProcessorInterface::class);
-        $processor1->method('process')->willReturnCallback(function (array &$definitions) {
-            unset($definitions['id1']);
-        });
+        $processor1->method('process')->willReturnCallback(
+            function (array &$definitions) {
+                unset($definitions['id1']);
+            }
+        );
 
         $processor2 = $this->createMock(ContainerProcessorInterface::class);
-        $processor2->method('process')->willReturnCallback(function (array &$definitions) {
-            unset($definitions['id2']);
-        });
+        $processor2->method('process')->willReturnCallback(
+            function (array &$definitions) {
+                unset($definitions['id2']);
+            }
+        );
 
         $builder = (new ContainerBuilder())->addProcessors($processor1, $processor2);
         $builder->class('id1', ConstructorWithNoArgument::class);
@@ -295,6 +299,24 @@ PHP;
         $builder->class('id3', ConstructorWithNoArgument::class);
 
         $container = new Container(['id3' => new ClassDefinition(ConstructorWithNoArgument::class)]);
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testTagArgumentContainerProcessorIsDefault()
+    {
+        $builder = new ContainerBuilder();
+        $builder->class('id1', ConstructorWithNoArgument::class)->argument(0, '*tag');
+        $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->class('id3', ConstructorWithNoArgument::class)->tag('tag');
+
+        $container = new Container(
+            [
+                'id1' => new ClassDefinition(ConstructorWithNoArgument::class, true, false, [0 => ['@id2', '@id3']]),
+                'id2' => new ClassDefinition(ConstructorWithNoArgument::class),
+                'id3' => new ClassDefinition(ConstructorWithNoArgument::class)
+            ]
+        );
+
         $this->assertEquals($container, $builder->build());
     }
 }

@@ -114,4 +114,11 @@ class ClassDefinitionBuilderTest extends AbstractDefinitionBuilderTest
     {
         return new ClassDefinitionBuilder(ConstructorWithNoArgument::class);
     }
+
+    public function testGetArguments()
+    {
+        $builder = (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))
+            ->arguments(['argument1', 'argument2']);
+        $this->assertSame([0 => 'argument1', 1 => 'argument2'], $builder->getArguments());
+    }
 }
