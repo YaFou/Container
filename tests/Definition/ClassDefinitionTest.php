@@ -5,9 +5,11 @@ namespace YaFou\Container\Tests\Definition;
 use PHPUnit\Framework\TestCase;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\ClassDefinition;
+use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Exception\UnknownArgumentException;
 use YaFou\Container\Tests\Fixtures\AbstractClass;
+use YaFou\Container\Tests\Fixtures\ConstructorWithArrayArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
@@ -125,5 +127,31 @@ class ClassDefinitionTest extends TestCase
     {
         $definition = new ClassDefinition(ConstructorWithOneStringArgument::class, true, false, [0 => '@@id']);
         $this->assertSame('@id', $definition->get(new Container())->string);
+    }
+
+    public function testGetArrayOfArgumentIds()
+    {
+        $definition = new ClassDefinition(ConstructorWithArrayArgument::class, true, false, [['@id1', '@id2']]);
+
+        $container = new Container(
+            [
+                'id1' => new ValueDefinition('value1'),
+                'id2' => new ValueDefinition('value2')
+            ]
+        );
+
+        $this->assertSame(['value1', 'value2'], $definition->get($container)->array);
+    }
+
+    public function testGetArrayOfArgumentNonIds()
+    {
+        $definition = new ClassDefinition(ConstructorWithArrayArgument::class, true, false, [[false, true]]);
+        $this->assertSame([false, true], $definition->get(new Container())->array);
+    }
+
+    public function testGetArrayOfArgumentNonIdsWithEscaped()
+    {
+        $definition = new ClassDefinition(ConstructorWithArrayArgument::class, true, false, [['@id1', '@@id2', null]]);
+        $this->assertSame(['@id1', '@@id2', null], $definition->get(new Container())->array);
     }
 }

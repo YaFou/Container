@@ -61,7 +61,23 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
         $arguments = [];
 
         foreach ($this->resolvedArguments as $argument) {
-            $arguments[] = $argument[0] ? $container->get($argument[1]) : $argument[1];
+            if ($argument[0]) {
+                $id = $argument[1];
+
+                if (is_array($id)) {
+                    $arguments[] = array_map(function (string $id) use ($container) {
+                        return $container->get($id);
+                    }, $id);
+
+                    continue;
+                }
+
+                $arguments[] = $container->get($id);
+
+                continue;
+            }
+
+            $arguments[] = $argument[1];
         }
 
         return $this->reflection->newInstanceArgs($arguments);
@@ -84,6 +100,26 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
         foreach ($constructor->getParameters() as $index => $parameter) {
             if (isset($this->arguments[$name = $parameter->getName()]) || isset($this->arguments[$index])) {
                 $value = $this->arguments[$name] ?? $this->arguments[$index];
+
+                if (is_array($value)) {
+                    $dynamic = true;
+
+                    foreach ($value as $id) {
+                        if (!is_string($id) || '@' !== $id[0] || '@' === $id[1]) {
+                            $dynamic = false;
+                        }
+                    }
+
+                    if ($dynamic) {
+                        $value = array_map(function (string $value) {
+                            return substr($value, 1);
+                        }, $value);
+                    }
+
+                    $arguments[] = [$dynamic, $value];
+
+                    continue;
+                }
 
                 if (is_string($value) && '@' === $value[0]) {
                     if ('@' !== $value[1]) {

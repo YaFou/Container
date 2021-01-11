@@ -8,6 +8,8 @@ use YaFou\Container\Compilation\Compiler;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
+use YaFou\Container\Definition\ValueDefinition;
+use YaFou\Container\Tests\Fixtures\ConstructorWithArrayArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithTwoArguments;
@@ -129,6 +131,46 @@ class ClassDefinitionCompilerTest extends TestCase
         $definitionCompiler->compile($definition, $compiler, $writer);
         $this->assertSame(
             'new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument(getter)',
+            $writer->getCode()
+        );
+    }
+
+    public function testArgumentArrayOfIds()
+    {
+        $definition = new ClassDefinition(ConstructorWithArrayArgument::class, true, false, [['@id1', '@id2']]);
+        $writer = new Writer();
+
+        $container = new Container(
+            $definitions = [
+                'id1' => new ValueDefinition('value1'),
+                'id2' => new ValueDefinition('value2')
+            ]
+        );
+        $definition->resolve($container);
+
+        $compiler = $this->getMockBuilder(Compiler::class)
+            ->onlyMethods(['generateGetter', 'getIdsToMapping', 'getDefinitions'])
+            ->getMock();
+        $compiler->method('getDefinitions')->willReturn($definitions);
+        $compiler->method('generateGetter')->willReturnCallback(
+            function (ValueDefinition $definition) use ($writer) {
+                $writer->writeRaw($definition->getValue());
+            }
+        );
+        $compiler->method('getIdsToMapping')->willReturn(
+            [
+                'id1' => 0,
+                'id2' => 1
+            ]
+        );
+
+        $definitionCompiler = new ClassDefinitionCompiler();
+        $definitionCompiler->compile($definition, $compiler, $writer);
+
+        $this->assertSame(
+            'new \YaFou\Container\Tests\Fixtures\ConstructorWithArrayArgument(' .
+            '[$this->resolvedDefinitions[\'id1\'] ?? $this->get0(), ' .
+            '$this->resolvedDefinitions[\'id2\'] ?? $this->get1()])',
             $writer->getCode()
         );
     }

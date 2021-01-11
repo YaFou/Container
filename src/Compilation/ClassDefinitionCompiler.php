@@ -27,18 +27,29 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
             }
 
             if ($argument[0]) {
-                $argumentDefinition = $compiler->getDefinitions()[$argument[1]];
+                $id = $argument[1];
 
-                if ($argumentDefinition->isShared()) {
-                    $writer
-                        ->writeRaw('$this->resolvedDefinitions[')
-                        ->export($argument[1])
-                        ->writeRaw("] ?? \$this->get{$compiler->getIdsToMapping()[$argument[1]]}()");
+                if (is_array($id)) {
+                    $needCommaIds = false;
+
+                    $writer->writeRaw('[');
+
+                    foreach ($id as $subId) {
+                        if ($needCommaIds) {
+                            $writer->writeRaw(', ');
+                        } else {
+                            $needCommaIds = true;
+                        }
+
+                        $this->compileArgument($compiler, $writer, $subId);
+                    }
+
+                    $writer->writeRaw(']');
 
                     continue;
                 }
 
-                $compiler->generateGetter($argumentDefinition);
+                $this->compileArgument($compiler, $writer, $id);
 
                 continue;
             }
@@ -47,6 +58,22 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
         }
 
         $writer->writeRaw(')');
+    }
+
+    private function compileArgument(Compiler $compiler, WriterInterface $writer, string $id): void
+    {
+        $definition = $compiler->getDefinitions()[$id];
+
+        if ($definition->isShared()) {
+            $writer
+                ->writeRaw('$this->resolvedDefinitions[')
+                ->export($id)
+                ->writeRaw("] ?? \$this->get{$compiler->getIdsToMapping()[$id]}()");
+
+            return;
+        }
+
+        $compiler->generateGetter($definition);
     }
 
     public function supports(DefinitionInterface $definition): bool
