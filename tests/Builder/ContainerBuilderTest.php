@@ -17,6 +17,8 @@ use YaFou\Container\Definition\FactoryDefinition;
 use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Proxy\ProxyManager;
 use YaFou\Container\Proxy\ProxyManagerInterface;
+use YaFou\Container\Tests\Fixtures\Builder\NoParentNoInterface;
+use YaFou\Container\Tests\Fixtures\Builder\OneParentNoInterface;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 
 class ContainerBuilderTest extends TestCase
@@ -69,16 +71,16 @@ class ContainerBuilderTest extends TestCase
 
     public function testClass()
     {
-        $container = new ContainerBuilder();
+        $builder = new ContainerBuilder();
 
         $this->assertEquals(
             new ClassDefinitionBuilder(ConstructorWithNoArgument::class),
-            $container->class('id', ConstructorWithNoArgument::class)
+            $builder->class('id', ConstructorWithNoArgument::class)
         );
 
         $this->assertEquals(
             new Container(['id' => new ClassDefinition(ConstructorWithNoArgument::class)]),
-            $container->build()
+            $builder->build()
         );
     }
 
@@ -208,5 +210,69 @@ PHP;
 
         @unlink($file);
         @rmdir(dirname($file));
+    }
+
+    public function testBindingOneDefinition()
+    {
+        $builder = new ContainerBuilder();
+        $builder->class('id', OneParentNoInterface::class);
+        $container = new Container(
+            [
+                'id' => new ClassDefinition(OneParentNoInterface::class),
+                NoParentNoInterface::class => new AliasDefinition('id')
+            ]
+        );
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testBindingTwoDefinitions()
+    {
+        $builder = new ContainerBuilder();
+        $builder->class('id1', OneParentNoInterface::class);
+        $builder->class('id2', OneParentNoInterface::class);
+        $container = new Container(
+            [
+                'id1' => new ClassDefinition(OneParentNoInterface::class),
+                'id2' => new ClassDefinition(OneParentNoInterface::class)
+            ]
+        );
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testBindingDoesNotOverride()
+    {
+        $builder = new ContainerBuilder();
+        $builder->class('id', OneParentNoInterface::class);
+        $builder->class(NoParentNoInterface::class, NoParentNoInterface::class);
+        $container = new Container(
+            [
+                'id' => new ClassDefinition(OneParentNoInterface::class),
+                NoParentNoInterface::class => new ClassDefinition(NoParentNoInterface::class)
+            ]
+        );
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testDisableAutoBinding()
+    {
+        $builder = (new ContainerBuilder())->disableAutoBinding();
+        $builder->class('id', OneParentNoInterface::class);
+        $container = new Container(['id' => new ClassDefinition(OneParentNoInterface::class)]);
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testClassWithNoClassArgumentDefined()
+    {
+        $container = new ContainerBuilder();
+
+        $this->assertEquals(
+            new ClassDefinitionBuilder(ConstructorWithNoArgument::class),
+            $container->class(ConstructorWithNoArgument::class)
+        );
+
+        $this->assertEquals(
+            new Container([ConstructorWithNoArgument::class => new ClassDefinition(ConstructorWithNoArgument::class)]),
+            $container->build()
+        );
     }
 }

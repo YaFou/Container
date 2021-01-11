@@ -5,6 +5,7 @@ namespace YaFou\Container\Builder;
 use YaFou\Container\Compilation\Compiler;
 use YaFou\Container\Compilation\CompilerInterface;
 use YaFou\Container\Container;
+use YaFou\Container\Definition\AliasDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Proxy\ProxyManager;
 use YaFou\Container\Proxy\ProxyManagerInterface;
@@ -19,6 +20,10 @@ class ContainerBuilder
      */
     private $compilationFile;
     private $compiler;
+    /**
+     * @var bool
+     */
+    private $autoBinding = true;
 
     public function build(): Container
     {
@@ -34,26 +39,49 @@ class ContainerBuilder
             return new $class($options);
         }
 
-        $definitions = array_map(
-            function (DefinitionBuilderInterface $builder) {
-                return $builder->build();
-            },
-            $this->definitions
-        );
+        $container = new Container($this->getDefinitions(), $options);
 
         if (null !== $this->compilationFile) {
-            $container = new Container($definitions, $options);
-            $container->validate();
-
-            $code = $this->compiler->compile($container->getDefinitions());
-            file_put_contents($this->compilationFile, $code);
-            require $this->compilationFile;
-            $class = $this->compiler->getCompiledContainerClass();
-
-            return new $class($options);
+            return $this->compile($container, $options);
         }
 
-        return new Container($definitions, $options);
+        return $container;
+    }
+
+    private function compile(Container $container, array $options): Container
+    {
+        $container->validate();
+
+        $code = $this->compiler->compile($container->getDefinitions());
+        file_put_contents($this->compilationFile, $code);
+        require $this->compilationFile;
+        $class = $this->compiler->getCompiledContainerClass();
+
+        return new $class($options);
+    }
+
+    private function getDefinitions(): array
+    {
+        $bindings = [];
+        $definitions = [];
+
+        foreach ($this->definitions as $id => $definitionBuilder) {
+            $definitions[$id] = $definitionBuilder->build();
+
+            if ($this->autoBinding && $definitionBuilder instanceof BindingAwareInterface) {
+                foreach ($definitionBuilder->getBindings() as $binding) {
+                    $bindings[$binding][] = $id;
+                }
+            }
+        }
+
+        foreach ($bindings as $id => $binding) {
+            if (1 === count($binding) && !isset($definitions[$id])) {
+                $definitions[$id] = new AliasDefinition($binding[0]);
+            }
+        }
+
+        return $definitions;
     }
 
     public function setLocked(bool $locked = true): self
@@ -75,9 +103,9 @@ class ContainerBuilder
         return $this;
     }
 
-    public function class(string $id, string $class): ClassDefinitionBuilder
+    public function class(string $id, string $class = null): ClassDefinitionBuilder
     {
-        return $this->definitions[$id] = new ClassDefinitionBuilder($class);
+        return $this->definitions[$id] = new ClassDefinitionBuilder($class ?? $id);
     }
 
     public function factory(string $id, callable $factory): FactoryDefinitionBuilder
@@ -113,6 +141,13 @@ class ContainerBuilder
     public function setCompiler(CompilerInterface $compiler): self
     {
         $this->compiler = $compiler;
+
+        return $this;
+    }
+
+    public function disableAutoBinding(): self
+    {
+        $this->autoBinding = false;
 
         return $this;
     }

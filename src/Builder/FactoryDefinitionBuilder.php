@@ -9,6 +9,7 @@ class FactoryDefinitionBuilder implements DefinitionBuilderInterface
 {
     use SharedBuilderTrait;
     use LazyBuilderTrait;
+    use BindingsBuilderTrait;
 
     /**
      * @var callable
@@ -17,7 +18,7 @@ class FactoryDefinitionBuilder implements DefinitionBuilderInterface
     /**
      * @var string
      */
-    private $proxyClass;
+    private $class;
 
     public function __construct(callable $factory)
     {
@@ -26,13 +27,19 @@ class FactoryDefinitionBuilder implements DefinitionBuilderInterface
 
     public function build(): DefinitionInterface
     {
-        return new FactoryDefinition($this->factory, $this->shared, $this->proxyClass, $this->lazy);
+        return new FactoryDefinition($this->factory, $this->shared, $this->class, $this->lazy);
     }
 
     public function lazy(string $class): self
     {
         $this->lazy = true;
-        $this->proxyClass = $class;
+
+        return $this->class($class);
+    }
+
+    public function class(string $class): self
+    {
+        $this->class = $class;
 
         return $this;
     }
