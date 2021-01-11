@@ -40,19 +40,23 @@ class Container implements ContainerInterface
         );
         $this->validateOptions();
         $this->definitionsInResolving = [];
+        $selfDefinition = new ValueDefinition($this);
 
         if (!isset($this->definitions[ContainerInterface::class])) {
             $this->resolvedDefinitions[ContainerInterface::class] = $this;
+            $this->definitions[ContainerInterface::class] = $selfDefinition;
         }
 
         foreach (class_parents(static::class) as $parent) {
             if (!isset($this->definitions[$parent])) {
                 $this->resolvedDefinitions[$parent] = $this;
+                $this->definitions[$parent] = $selfDefinition;
             }
         }
 
         if (!isset($this->definitions[static::class])) {
             $this->resolvedDefinitions[static::class] = $this;
+            $this->definitions[static::class] = $selfDefinition;
         }
     }
 

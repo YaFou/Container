@@ -14,6 +14,7 @@ use YaFou\Container\Exception\RecursiveDependencyDetectedException;
 use YaFou\Container\Exception\UnknownArgumentException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Proxy\ProxyManagerInterface;
+use YaFou\Container\Tests\Fixtures\ConstructorWithContainerArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
 use YaFou\Container\Tests\Fixtures\DoubleExtendedContainer;
@@ -242,5 +243,11 @@ class ContainerTest extends TestCase
         $this->assertSame($container, $container->get(DoubleExtendedContainer::class));
         $this->assertSame($container, $container->get(ExtendedContainer::class));
         $this->assertSame($container, $container->get(Container::class));
+    }
+
+    public function testResolveObjectWithContainerDependency()
+    {
+        $container = new Container([]);
+        $this->assertTrue($container->has(ConstructorWithContainerArgument::class));
     }
 }
