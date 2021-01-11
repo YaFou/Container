@@ -46,4 +46,16 @@ class TagArgumentContainerProcessorTest extends TestCase
         $processor->process($definitions);
         $this->assertSame(['@id4', '@id2', '@id3'], $definitions['id1']->getArguments()[0]);
     }
+
+    public function testNotReplaceNullArgument()
+    {
+        $expectedDefinitions = $definitions = [
+            'id' => (new ClassDefinitionBuilder(
+                ConstructorWithNoArgument::class
+            ))->argument(0, null)
+        ];
+        $processor = new TagArgumentContainerProcessor();
+        $processor->process($definitions);
+        $this->assertSame($expectedDefinitions, $definitions);
+    }
 }

@@ -26,7 +26,7 @@ class Container implements ContainerInterface
     /**
      * @var array
      */
-    private $definitionsInResolving;
+    private $definitionsInResolving = [];
 
     public function __construct(array $definitions, array $options = [])
     {
@@ -39,7 +39,6 @@ class Container implements ContainerInterface
             $options
         );
         $this->validateOptions();
-        $this->definitionsInResolving = [];
         $selfDefinition = new ValueDefinition($this);
 
         if (!isset($this->definitions[ContainerInterface::class])) {

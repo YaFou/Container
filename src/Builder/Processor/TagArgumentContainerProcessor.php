@@ -11,7 +11,7 @@ class TagArgumentContainerProcessor extends AbstractContainerProcessor
         foreach ($this->definitions as $definition) {
             if ($definition instanceof ClassDefinitionBuilder) {
                 foreach ($definition->getArguments() as $index => $argument) {
-                    if ('*' === $argument[0]) {
+                    if (is_string($argument) && '*' === $argument[0]) {
                         if ('*' === $argument[1]) {
                             $definition->argument($index, substr($argument, 1));
 
