@@ -1,6 +1,8 @@
 <?php
 
-namespace YaFou\Container\Builder;
+namespace YaFou\Container\Builder\Processor;
+
+use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 
 class TagArgumentContainerProcessor extends AbstractContainerProcessor
 {

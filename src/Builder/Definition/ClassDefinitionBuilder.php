@@ -1,6 +1,6 @@
 <?php
 
-namespace YaFou\Container\Builder;
+namespace YaFou\Container\Builder\Definition;
 
 use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;

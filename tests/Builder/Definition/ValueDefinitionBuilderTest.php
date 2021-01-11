@@ -1,10 +1,9 @@
 <?php
 
-namespace YaFou\Container\Tests\Builder;
+namespace YaFou\Container\Tests\Builder\Definition;
 
-use YaFou\Container\Builder\AbstractDefinitionBuilder;
-use YaFou\Container\Builder\DefinitionBuilderInterface;
-use YaFou\Container\Builder\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Definition\AbstractDefinitionBuilder;
+use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
 use YaFou\Container\Definition\ValueDefinition;
 
 class ValueDefinitionBuilderTest extends AbstractDefinitionBuilderTest

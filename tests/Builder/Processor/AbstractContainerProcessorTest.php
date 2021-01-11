@@ -1,12 +1,11 @@
 <?php
 
-namespace YaFou\Container\Tests\Builder;
+namespace YaFou\Container\Tests\Builder\Processor;
 
-use YaFou\Container\Builder\AbstractContainerProcessor;
 use PHPUnit\Framework\TestCase;
-use YaFou\Container\Builder\ClassDefinitionBuilder;
+use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
+use YaFou\Container\Builder\Processor\AbstractContainerProcessor;
 use YaFou\Container\Definition\ClassDefinition;
-use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 

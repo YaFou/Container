@@ -1,6 +1,6 @@
 <?php
 
-namespace YaFou\Container\Builder;
+namespace YaFou\Container\Builder\Definition;
 
 trait SharedBuilderTrait
 {

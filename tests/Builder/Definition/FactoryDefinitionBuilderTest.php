@@ -1,10 +1,9 @@
 <?php
 
-namespace YaFou\Container\Tests\Builder;
+namespace YaFou\Container\Tests\Builder\Definition;
 
-use YaFou\Container\Builder\AbstractDefinitionBuilder;
-use YaFou\Container\Builder\DefinitionBuilderInterface;
-use YaFou\Container\Builder\FactoryDefinitionBuilder;
+use YaFou\Container\Builder\Definition\AbstractDefinitionBuilder;
+use YaFou\Container\Builder\Definition\FactoryDefinitionBuilder;
 use YaFou\Container\Definition\FactoryDefinition;
 use YaFou\Container\Tests\Fixtures\Builder\NoParentInterface1;
 use YaFou\Container\Tests\Fixtures\Builder\NoParentInterface2;

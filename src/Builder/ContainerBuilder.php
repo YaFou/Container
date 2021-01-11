@@ -2,6 +2,14 @@
 
 namespace YaFou\Container\Builder;
 
+use YaFou\Container\Builder\Definition\AliasDefinitionBuilder;
+use YaFou\Container\Builder\Definition\BindingAwareInterface;
+use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
+use YaFou\Container\Builder\Definition\CustomDefinitionBuilder;
+use YaFou\Container\Builder\Definition\FactoryDefinitionBuilder;
+use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Processor\ContainerProcessorInterface;
+use YaFou\Container\Builder\Processor\TagArgumentContainerProcessor;
 use YaFou\Container\Compilation\Compiler;
 use YaFou\Container\Compilation\CompilerInterface;
 use YaFou\Container\Container;

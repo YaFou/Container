@@ -1,11 +1,11 @@
 <?php
 
-namespace YaFou\Container\Tests\Builder;
+namespace YaFou\Container\Tests\Builder\Processor;
 
-use YaFou\Container\Builder\ClassDefinitionBuilder;
-use YaFou\Container\Builder\TagArgumentContainerProcessor;
 use PHPUnit\Framework\TestCase;
-use YaFou\Container\Builder\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
+use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Processor\TagArgumentContainerProcessor;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 
 class TagArgumentContainerProcessorTest extends TestCase

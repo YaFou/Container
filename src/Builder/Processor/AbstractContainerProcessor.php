@@ -1,7 +1,8 @@
 <?php
 
-namespace YaFou\Container\Builder;
+namespace YaFou\Container\Builder\Processor;
 
+use YaFou\Container\Builder\Definition\DefinitionBuilderInterface;
 use YaFou\Container\Exception\NotFoundException;
 
 abstract class AbstractContainerProcessor implements ContainerProcessorInterface

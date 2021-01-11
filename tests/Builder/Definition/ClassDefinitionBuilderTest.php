@@ -1,11 +1,9 @@
 <?php
 
-namespace YaFou\Container\Tests\Builder;
+namespace YaFou\Container\Tests\Builder\Definition;
 
-use PHPUnit\Framework\TestCase;
-use YaFou\Container\Builder\AbstractDefinitionBuilder;
-use YaFou\Container\Builder\ClassDefinitionBuilder;
-use YaFou\Container\Builder\DefinitionBuilderInterface;
+use YaFou\Container\Builder\Definition\AbstractDefinitionBuilder;
+use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Tests\Fixtures\Builder\NoParentInterface1;

@@ -3,12 +3,12 @@
 namespace YaFou\Container\Tests\Builder;
 
 use PHPUnit\Framework\TestCase;
-use YaFou\Container\Builder\AliasDefinitionBuilder;
-use YaFou\Container\Builder\ClassDefinitionBuilder;
 use YaFou\Container\Builder\ContainerBuilder;
-use YaFou\Container\Builder\ContainerProcessorInterface;
-use YaFou\Container\Builder\FactoryDefinitionBuilder;
-use YaFou\Container\Builder\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Definition\AliasDefinitionBuilder;
+use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
+use YaFou\Container\Builder\Definition\FactoryDefinitionBuilder;
+use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Processor\ContainerProcessorInterface;
 use YaFou\Container\Compilation\CompilerInterface;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\AliasDefinition;

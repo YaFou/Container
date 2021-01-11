@@ -1,10 +1,9 @@
 <?php
 
-namespace YaFou\Container\Tests\Builder;
+namespace YaFou\Container\Tests\Builder\Definition;
 
 use PHPUnit\Framework\TestCase;
-use YaFou\Container\Builder\AbstractDefinitionBuilder;
-use YaFou\Container\Builder\DefinitionBuilderInterface;
+use YaFou\Container\Builder\Definition\AbstractDefinitionBuilder;
 use YaFou\Container\Exception\NotFoundException;
 
 abstract class AbstractDefinitionBuilderTest extends TestCase
