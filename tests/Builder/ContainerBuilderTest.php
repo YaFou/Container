@@ -27,7 +27,7 @@ class ContainerBuilderTest extends TestCase
     public function testBuildEmpty()
     {
         $builder = new ContainerBuilder();
-        $this->assertEquals(new Container(), $builder->build());
+        $this->assertEquals(new Container([]), $builder->build());
     }
 
     public function testSetLocked()
@@ -39,7 +39,7 @@ class ContainerBuilderTest extends TestCase
     public function testSetNotLocked()
     {
         $builder = (new ContainerBuilder())->setLocked()->setLocked(false);
-        $this->assertEquals(new Container(), $builder->build());
+        $this->assertEquals(new Container([]), $builder->build());
     }
 
     public function testSetProxyManager()
@@ -67,7 +67,7 @@ class ContainerBuilderTest extends TestCase
     public function testSetDefaultProxyCacheDirectory()
     {
         $builder = (new ContainerBuilder())->enableProxiesCache('directory')->enableProxiesCache(null);
-        $this->assertEquals(new Container(), $builder->build());
+        $this->assertEquals(new Container([]), $builder->build());
     }
 
     public function testClass()

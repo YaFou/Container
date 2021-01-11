@@ -28,7 +28,7 @@ class Container implements ContainerInterface
      */
     private $definitionsInResolving;
 
-    public function __construct(array $definitions = [], array $options = [])
+    public function __construct(array $definitions, array $options = [])
     {
         $this->definitions = $definitions;
         $this->options = array_merge(

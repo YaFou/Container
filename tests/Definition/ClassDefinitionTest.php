@@ -48,19 +48,19 @@ class ClassDefinitionTest extends TestCase
             'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarArgument::class . '"'
         );
         $definition = new ClassDefinition(ConstructorWithOneScalarArgument::class);
-        $definition->resolve(new Container());
+        $definition->resolve(new Container([]));
     }
 
     public function testGetWithNoArgument()
     {
         $definition = new ClassDefinition(ConstructorWithNoArgument::class);
-        $this->assertInstanceOf(ConstructorWithNoArgument::class, $definition->get(new Container()));
+        $this->assertInstanceOf(ConstructorWithNoArgument::class, $definition->get(new Container([])));
     }
 
     public function testGetWithOneArgument()
     {
         $definition = new ClassDefinition(ConstructorWithOneArgument::class);
-        $value = $definition->get(new Container());
+        $value = $definition->get(new Container([]));
         $this->assertInstanceOf(ConstructorWithOneArgument::class, $value);
         $this->assertInstanceOf(ConstructorWithNoArgument::class, $value->constructorWithNoArgument);
     }
@@ -104,13 +104,13 @@ class ClassDefinitionTest extends TestCase
     public function testGetWithArgumentsWithName()
     {
         $definition = new ClassDefinition(ConstructorWithOneScalarArgument::class, true, false, ['scalar' => false]);
-        $this->assertFalse($definition->get(new Container())->scalar);
+        $this->assertFalse($definition->get(new Container([]))->scalar);
     }
 
     public function testGetWithArgumentsWithIndex()
     {
         $definition = new ClassDefinition(ConstructorWithOneScalarArgument::class, true, false, [0 => false]);
-        $this->assertFalse($definition->get(new Container())->scalar);
+        $this->assertFalse($definition->get(new Container([]))->scalar);
     }
 
     public function testGetWithArgumentsWithId()
@@ -126,7 +126,7 @@ class ClassDefinitionTest extends TestCase
     public function testGetWithArgumentsWithEscapedId()
     {
         $definition = new ClassDefinition(ConstructorWithOneStringArgument::class, true, false, [0 => '@@id']);
-        $this->assertSame('@id', $definition->get(new Container())->string);
+        $this->assertSame('@id', $definition->get(new Container([]))->string);
     }
 
     public function testGetArrayOfArgumentIds()
@@ -146,12 +146,12 @@ class ClassDefinitionTest extends TestCase
     public function testGetArrayOfArgumentNonIds()
     {
         $definition = new ClassDefinition(ConstructorWithArrayArgument::class, true, false, [[false, true]]);
-        $this->assertSame([false, true], $definition->get(new Container())->array);
+        $this->assertSame([false, true], $definition->get(new Container([]))->array);
     }
 
     public function testGetArrayOfArgumentNonIdsWithEscaped()
     {
         $definition = new ClassDefinition(ConstructorWithArrayArgument::class, true, false, [['@id1', '@@id2', null]]);
-        $this->assertSame(['@id1', '@@id2', null], $definition->get(new Container())->array);
+        $this->assertSame(['@id1', '@@id2', null], $definition->get(new Container([]))->array);
     }
 }

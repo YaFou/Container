@@ -29,7 +29,7 @@ class ClassDefinitionCompilerTest extends TestCase
         $definitionCompiler = new ClassDefinitionCompiler();
         $writer = new Writer();
         $definition = new ClassDefinition(ConstructorWithNoArgument::class);
-        $definition->resolve(new Container());
+        $definition->resolve(new Container([]));
         $definitionCompiler->compile($definition, new Compiler(), $writer);
         $this->assertSame('new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument()', $writer->getCode());
     }
@@ -97,7 +97,7 @@ class ClassDefinitionCompilerTest extends TestCase
         $definitionCompiler = new ClassDefinitionCompiler();
         $writer = new Writer();
         $definition = new ClassDefinition(ConstructorWithOneArgument::class, true, false, [0 => 'value']);
-        $definition->resolve(new Container());
+        $definition->resolve(new Container([]));
         $definitionCompiler->compile($definition, new Compiler(), $writer);
         $this->assertSame(
             'new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument(\'value\')',

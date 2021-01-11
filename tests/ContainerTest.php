@@ -26,7 +26,7 @@ class ContainerTest extends TestCase
 {
     public function testHasWithIdNonString()
     {
-        $container = new Container();
+        $container = new Container([]);
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The id must be a string');
         $container->has(null);
@@ -34,7 +34,7 @@ class ContainerTest extends TestCase
 
     public function testGetWithIdNonString()
     {
-        $container = new Container();
+        $container = new Container([]);
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The id must be a string');
         $container->get(null);
@@ -50,7 +50,7 @@ class ContainerTest extends TestCase
 
     public function testHasWithUnknownDefinition()
     {
-        $container = new Container();
+        $container = new Container([]);
         $this->assertTrue($container->has(ConstructorWithNoArgument::class));
     }
 
@@ -113,13 +113,13 @@ class ContainerTest extends TestCase
 
     public function testGetContainerInterface()
     {
-        $container = new Container();
+        $container = new Container([]);
         $this->assertSame($container, $container->get(ContainerInterface::class));
     }
 
     public function testGetContainer()
     {
-        $container = new Container();
+        $container = new Container([]);
         $this->assertSame($container, $container->get(Container::class));
     }
 
@@ -178,7 +178,7 @@ class ContainerTest extends TestCase
 
     public function testGetDefinitionsWithNoDefinitions()
     {
-        $this->assertEmpty((new Container())->getDefinitions());
+        $this->assertEmpty((new Container([]))->getDefinitions());
     }
 
     public function testGetDefinitionsWithDefinitions()
@@ -194,14 +194,14 @@ class ContainerTest extends TestCase
 
     public function testGetContainerChild()
     {
-        $container = new ExtendedContainer();
+        $container = new ExtendedContainer([]);
         $this->assertSame($container, $container->get(ExtendedContainer::class));
         $this->assertSame($container, $container->get(Container::class));
     }
 
     public function testThrowExceptionWhenRecursiveDependencyDetected()
     {
-        $container = new Container();
+        $container = new Container([]);
 
         $this->expectException(RecursiveDependencyDetectedException::class);
         $this->expectExceptionMessage(
@@ -238,7 +238,7 @@ class ContainerTest extends TestCase
 
     public function testGetContainerDoubleChild()
     {
-        $container = new DoubleExtendedContainer();
+        $container = new DoubleExtendedContainer([]);
         $this->assertSame($container, $container->get(DoubleExtendedContainer::class));
         $this->assertSame($container, $container->get(ExtendedContainer::class));
         $this->assertSame($container, $container->get(Container::class));
