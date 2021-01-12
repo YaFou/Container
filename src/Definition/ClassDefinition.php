@@ -58,9 +58,12 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
             return $this->reflection->newInstance();
         }
 
-        $arguments = array_map(function (ArgumentDefinition $definition) use ($container) {
-            return $definition->get($container);
-        }, $this->resolvedArguments);
+        $arguments = array_map(
+            function ($argument) use ($container) {
+                return $argument instanceof ArgumentDefinition ? $argument->get($container) : $argument;
+            },
+            $this->resolvedArguments
+        );
 
         return $this->reflection->newInstanceArgs($arguments);
     }
@@ -93,9 +96,23 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
                 continue;
             }
 
-            if (null !== $class = $parameter->getClass()) {
-                $arguments[] = $argument = new ArgumentDefinition($class->getName(), true);
-                $argument->resolve($container);
+            try {
+                if (null !== $class = $parameter->getClass()) {
+                    $arguments[] = $argument = new ArgumentDefinition($class->getName(), true);
+                    $argument->resolve($container);
+
+                    continue;
+                }
+            } catch (\ReflectionException $e) {
+                if (!$parameter->isDefaultValueAvailable()) {
+                    throw new InvalidArgumentException(
+                        sprintf('The class "%s" does not exist', $parameter->getType()->getName())
+                    );
+                }
+            }
+
+            if ($parameter->isDefaultValueAvailable()) {
+                $arguments[] = $parameter->getDefaultValue();
 
                 continue;
             }

@@ -33,15 +33,21 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
         $writer->writeRaw(')');
     }
 
-    private function compileArgument(Compiler $compiler, WriterInterface $writer, ArgumentDefinition $definition): void
+    private function compileArgument(Compiler $compiler, WriterInterface $writer, $argument): void
     {
-        $value = $definition->getResolvedValue();
+        if (!$argument instanceof ArgumentDefinition) {
+            $writer->export($argument);
 
-        if ($definition->isId()) {
+            return;
+        }
+
+        $value = $argument->getResolvedValue();
+
+        if ($argument->isId()) {
             if (isset($compiler->getDefinitions()[$value])) {
-                $definition = $compiler->getDefinitions()[$value];
+                $argument = $compiler->getDefinitions()[$value];
 
-                if ($definition->isShared()) {
+                if ($argument->isShared()) {
                     $writer
                         ->writeRaw('$this->resolvedDefinitions[')
                         ->export($value)
@@ -50,7 +56,7 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
                     return;
                 }
 
-                $compiler->generateGetter($definition);
+                $compiler->generateGetter($argument);
 
                 return;
             }
