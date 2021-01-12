@@ -58,30 +58,9 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
             return $this->reflection->newInstance();
         }
 
-        $arguments = [];
-
-        foreach ($this->resolvedArguments as $argument) {
-            if ($argument[0]) {
-                $id = $argument[1];
-
-                if (is_array($id)) {
-                    $arguments[] = array_map(
-                        function (string $id) use ($container) {
-                            return $container->get($id);
-                        },
-                        $id
-                    );
-
-                    continue;
-                }
-
-                $arguments[] = $container->get($id);
-
-                continue;
-            }
-
-            $arguments[] = $argument[1];
-        }
+        $arguments = array_map(function (ArgumentDefinition $definition) use ($container) {
+            return $definition->get($container);
+        }, $this->resolvedArguments);
 
         return $this->reflection->newInstanceArgs($arguments);
     }
@@ -108,48 +87,15 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
                 )
             ) {
                 $value = $this->arguments[$name] ?? $this->arguments[$index];
-
-                if (is_array($value)) {
-                    $dynamic = true;
-
-                    foreach ($value as $id) {
-                        if (!is_string($id) || '@' !== $id[0] || '@' === $id[1]) {
-                            $dynamic = false;
-                        }
-                    }
-
-                    if ($dynamic) {
-                        $value = array_map(
-                            function (string $value) {
-                                return substr($value, 1);
-                            },
-                            $value
-                        );
-                    }
-
-                    $arguments[] = [$dynamic, $value];
-
-                    continue;
-                }
-
-                if (is_string($value) && '@' === $value[0]) {
-                    if ('@' !== $value[1]) {
-                        $arguments[] = [true, substr($value, 1)];
-
-                        continue;
-                    }
-
-                    $value = substr($value, 1);
-                }
-
-                $arguments[] = [false, $value];
+                $arguments[] = $argument = new ArgumentDefinition($value);
+                $argument->resolve($container);
 
                 continue;
             }
 
             if (null !== $class = $parameter->getClass()) {
-                $container->resolveDefinition($name = $class->getName());
-                $arguments[] = [true, $name];
+                $arguments[] = $argument = new ArgumentDefinition($class->getName(), true);
+                $argument->resolve($container);
 
                 continue;
             }

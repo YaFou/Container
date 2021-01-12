@@ -2,6 +2,7 @@
 
 namespace YaFou\Container\Compilation;
 
+use YaFou\Container\Definition\ArgumentDefinition;
 use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Writer\WriterInterface;
@@ -26,60 +27,67 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
                 $needComma = true;
             }
 
-            if ($argument[0]) {
-                $id = $argument[1];
-
-                if (is_array($id)) {
-                    $needCommaIds = false;
-
-                    $writer->writeRaw('[')->indent()->write('');
-
-                    foreach ($id as $subId) {
-                        if ($needCommaIds) {
-                            $writer->writeRaw(',')->newLine()->write('');
-                        } else {
-                            $needCommaIds = true;
-                        }
-
-                        $this->compileArgument($compiler, $writer, $subId);
-                    }
-
-                    $writer->outdent()->write(']');
-
-                    continue;
-                }
-
-                $this->compileArgument($compiler, $writer, $id);
-
-                continue;
-            }
-
-            $writer->export($argument[1]);
+            $this->compileArgument($compiler, $writer, $argument);
         }
 
         $writer->writeRaw(')');
     }
 
-    private function compileArgument(Compiler $compiler, WriterInterface $writer, string $id): void
+    private function compileArgument(Compiler $compiler, WriterInterface $writer, ArgumentDefinition $definition): void
     {
-        if (isset($compiler->getDefinitions()[$id])) {
-            $definition = $compiler->getDefinitions()[$id];
+        $value = $definition->getResolvedValue();
 
-            if ($definition->isShared()) {
-                $writer
-                    ->writeRaw('$this->resolvedDefinitions[')
-                    ->export($id)
-                    ->writeRaw("] ?? \$this->get{$compiler->getIdsToMapping()[$id]}()");
+        if ($definition->isId()) {
+            if (isset($compiler->getDefinitions()[$value])) {
+                $definition = $compiler->getDefinitions()[$value];
+
+                if ($definition->isShared()) {
+                    $writer
+                        ->writeRaw('$this->resolvedDefinitions[')
+                        ->export($value)
+                        ->writeRaw("] ?? \$this->get{$compiler->getIdsToMapping()[$value]}()");
+
+                    return;
+                }
+
+                $compiler->generateGetter($definition);
 
                 return;
             }
 
-            $compiler->generateGetter($definition);
+            $writer->writeRaw('$this');
 
             return;
         }
 
-        $writer->writeRaw('$this');
+        if (is_array($value)) {
+            $needComma = false;
+            $writer
+                ->write('[')
+                ->indent()
+                ->write('');
+
+            foreach ($value as $subDefinition) {
+                if ($needComma) {
+                    $writer
+                        ->writeRaw(',')
+                        ->newLine()
+                        ->write('');
+                } else {
+                    $needComma = true;
+                }
+
+                $this->compileArgument($compiler, $writer, $subDefinition);
+            }
+
+            $writer
+                ->outdent()
+                ->write(']');
+
+            return;
+        }
+
+        $writer->export($value);
     }
 
     public function supports(DefinitionInterface $definition): bool

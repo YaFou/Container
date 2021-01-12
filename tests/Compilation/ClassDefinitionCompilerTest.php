@@ -136,9 +136,9 @@ class ClassDefinitionCompilerTest extends TestCase
         );
     }
 
-    public function testArgumentArrayOfIds()
+    public function testArrayArguments()
     {
-        $definition = new ClassDefinition(ConstructorWithArrayArgument::class, true, false, [['@id1', '@id2']]);
+        $definition = new ClassDefinition(ConstructorWithArrayArgument::class, true, false, [['@id1', '@id2', 'value']]);
         $writer = new Writer();
 
         $container = new Container(
@@ -171,7 +171,8 @@ class ClassDefinitionCompilerTest extends TestCase
         $code = <<<'PHP'
 new \YaFou\Container\Tests\Fixtures\ConstructorWithArrayArgument([
     $this->resolvedDefinitions['id1'] ?? $this->get0(),
-    $this->resolvedDefinitions['id2'] ?? $this->get1()
+    $this->resolvedDefinitions['id2'] ?? $this->get1(),
+    'value'
 ])
 PHP;
 
