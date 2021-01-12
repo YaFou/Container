@@ -5,6 +5,7 @@ namespace YaFou\Container\Compilation;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\ProxyableInterface;
 use YaFou\Container\Exception\CompilationException;
+use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Writer\Writer;
 use YaFou\Container\Writer\WriterInterface;
@@ -78,16 +79,6 @@ class Compiler implements CompilerInterface
                 );
             }
         }
-    }
-
-    public function getDefinitions(): array
-    {
-        return $this->definitions;
-    }
-
-    public function getIdsToMapping(): array
-    {
-        return $this->idsToMapping;
     }
 
     /**
@@ -212,5 +203,24 @@ class Compiler implements CompilerInterface
     public function getCompiledContainerClass(): string
     {
         return $this->options['namespace'] . '\\' . $this->options['class'];
+    }
+
+    public function getDefinition(string $id): DefinitionInterface
+    {
+        if (!$this->hasDefinition($id)) {
+            throw new NotFoundException(sprintf('The definition with "%s" was not found', $id));
+        }
+
+        return $this->definitions[$id];
+    }
+
+    public function getMappingFromId(string $id): int
+    {
+        return $this->idsToMapping[$id];
+    }
+
+    public function hasDefinition(string $id): bool
+    {
+        return isset($this->definitions[$id]);
     }
 }

@@ -22,17 +22,15 @@ class AliasDefinitionCompilerTest extends TestCase
     public function testCompile()
     {
         $definitionCompiler = new AliasDefinitionCompiler();
-
         $writer = new Writer();
+
         $compiler = $this->getMockBuilder(Compiler::class)
-            ->onlyMethods(['getDefinitions', 'generateGetter'])
+            ->onlyMethods(['getDefinition', 'generateGetter'])
             ->getMock();
-        $compiler->method('getDefinitions')->willReturn(['id' => new ValueDefinition('value')]);
-        $compiler->method('generateGetter')->willReturnCallback(
-            function () use ($writer) {
-                $writer->writeRaw('getter');
-            }
-        );
+        $compiler->method('getDefinition')->with('id')->willReturn($definition = new ValueDefinition('value'));
+        $compiler->method('generateGetter')->with($definition)->willReturnCallback(function () use ($writer) {
+            $writer->writeRaw('getter');
+        });
 
         $definitionCompiler->compile(new AliasDefinition('id'), $compiler, $writer);
         $this->assertSame('getter', $writer->getCode());

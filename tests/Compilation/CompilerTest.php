@@ -10,6 +10,7 @@ use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\CompilationException;
+use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Writer\Writer;
@@ -390,5 +391,42 @@ PHP;
             'id2' => new ValueDefinition('value2')
         ];
         $this->assertSame($expected, $compiler->compile($definitions));
+    }
+
+    public function testGetDefinition()
+    {
+        $compiler = new Compiler();
+        $compiler->compile(['id' => $definition = new ValueDefinition('value')]);
+        $this->assertSame($definition, $compiler->getDefinition('id'));
+    }
+
+    public function testHasNotDefinition()
+    {
+        $compiler = new Compiler();
+        $compiler->compile([]);
+        $this->assertFalse($compiler->hasDefinition('id'));
+    }
+
+    public function testHasDefinition()
+    {
+        $compiler = new Compiler();
+        $compiler->compile(['id' => new ValueDefinition('value')]);
+        $this->assertTrue($compiler->hasDefinition('id'));
+    }
+
+    public function testGetDefinitionWhenNoDefinitionFound()
+    {
+        $compiler = new Compiler();
+        $compiler->compile([]);
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('The definition with "id" was not found');
+        $compiler->getDefinition('id');
+    }
+
+    public function testGetMappingFromId()
+    {
+        $compiler = new Compiler();
+        $compiler->compile(['id' => new ValueDefinition('value')]);
+        $this->assertSame(0, $compiler->getMappingFromId('id'));
     }
 }

@@ -11,7 +11,7 @@ class AliasDefinitionCompiler implements DefinitionCompilerInterface
     public function compile(DefinitionInterface $definition, Compiler $compiler, WriterInterface $writer): void
     {
         /** @var AliasDefinition $definition */
-        $compiler->generateGetter($compiler->getDefinitions()[$definition->getAlias()]);
+        $compiler->generateGetter($compiler->getDefinition($definition->getAlias()));
     }
 
     public function supports(DefinitionInterface $definition): bool

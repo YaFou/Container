@@ -41,12 +41,15 @@ class ClassDefinitionCompilerTest extends TestCase
         $container = new Container(['id' => $definition]);
         $container->resolveDefinition('id');
 
-        $compiler = $this->getMockBuilder(Compiler::class)->onlyMethods(['getIdsToMapping', 'getDefinitions'])->getMock(
-        );
-        $compiler->method('getIdsToMapping')->willReturn([ConstructorWithNoArgument::class => 0]);
-        $compiler->method('getDefinitions')->willReturn(
-            [ConstructorWithNoArgument::class => new ClassDefinition(ConstructorWithNoArgument::class)]
-        );
+        $compiler = $this->getMockBuilder(Compiler::class)
+            ->onlyMethods(['getMappingFromId', 'getDefinition', 'hasDefinition'])
+            ->getMock();
+        $compiler->method('getMappingFromId')->with(ConstructorWithNoArgument::class)->willReturn(0);
+        $compiler->method('getDefinition')
+            ->with(ConstructorWithNoArgument::class)
+            ->willReturn(new ClassDefinition(ConstructorWithNoArgument::class));
+        $compiler->method('hasDefinition')->with(ConstructorWithNoArgument::class)->willReturn(true);
+
         $writer = new Writer();
 
         $definitionCompiler = new ClassDefinitionCompiler();
@@ -65,20 +68,27 @@ class ClassDefinitionCompilerTest extends TestCase
         $container = new Container(['id' => $definition]);
         $container->resolveDefinition('id');
 
-        $compiler = $this->getMockBuilder(Compiler::class)->onlyMethods(['getIdsToMapping', 'getDefinitions'])->getMock(
-        );
-        $compiler->method('getIdsToMapping')->willReturn(
-            [
-                ConstructorWithNoArgument::class => 0,
-                ConstructorWithOneArgument::class => 1
-            ]
-        );
-        $compiler->method('getDefinitions')->willReturn(
-            [
-                ConstructorWithNoArgument::class => new ClassDefinition(ConstructorWithNoArgument::class),
-                ConstructorWithOneArgument::class => new ClassDefinition(ConstructorWithOneArgument::class)
-            ]
-        );
+        $compiler = $this->getMockBuilder(Compiler::class)
+            ->onlyMethods(['getMappingFromId', 'getDefinition', 'hasDefinition'])
+            ->getMock();
+
+        $compiler->method('getMappingFromId')
+            ->willReturnMap(
+                [
+                    [ConstructorWithNoArgument::class, 0],
+                    [ConstructorWithOneArgument::class, 1]
+                ]
+            );
+
+        $compiler->method('getDefinition')
+            ->willReturnMap(
+                [
+                    [ConstructorWithNoArgument::class, new ClassDefinition(ConstructorWithNoArgument::class)],
+                    [ConstructorWithOneArgument::class, new ClassDefinition(ConstructorWithOneArgument::class)]
+                ]
+            );
+        $compiler->method('hasDefinition')->willReturn(true);
+
         $writer = new Writer();
 
         $definitionCompiler = new ClassDefinitionCompiler();
@@ -112,17 +122,24 @@ class ClassDefinitionCompilerTest extends TestCase
         $container = new Container(
             $definitions = [
                 'id' => $definition,
-                ConstructorWithNoArgument::class => new ClassDefinition(ConstructorWithNoArgument::class, false)
+                ConstructorWithNoArgument::class => $dependencyDefinition = new ClassDefinition(
+                    ConstructorWithNoArgument::class,
+                    false
+                )
             ]
         );
         $container->validate();
 
         $writer = new Writer();
+
         $compiler = $this->getMockBuilder(Compiler::class)
-            ->onlyMethods(['getDefinitions', 'generateGetter'])
+            ->onlyMethods(['getDefinition', 'hasDefinition', 'generateGetter'])
             ->getMock();
-        $compiler->method('getDefinitions')->willReturn($definitions);
-        $compiler->method('generateGetter')->willReturnCallback(
+        $compiler->method('getDefinition')
+            ->with(ConstructorWithNoArgument::class)
+            ->willReturn($dependencyDefinition);
+        $compiler->method('hasDefinition')->with(ConstructorWithNoArgument::class)->willReturn(true);
+        $compiler->method('generateGetter')->with($dependencyDefinition)->willReturnCallback(
             function () use ($writer) {
                 $writer->writeRaw('getter');
             }
@@ -152,20 +169,21 @@ class ClassDefinitionCompilerTest extends TestCase
         $definition->resolve($container);
 
         $compiler = $this->getMockBuilder(Compiler::class)
-            ->onlyMethods(['generateGetter', 'getIdsToMapping', 'getDefinitions'])
+            ->onlyMethods(['generateGetter', 'getMappingFromId', 'getDefinition', 'hasDefinition'])
             ->getMock();
-        $compiler->method('getDefinitions')->willReturn($definitions);
+        $compiler->method('getDefinition')->willReturnMap([['id1', $definitions['id1']], ['id2', $definitions['id2']]]);
         $compiler->method('generateGetter')->willReturnCallback(
             function (ValueDefinition $definition) use ($writer) {
                 $writer->writeRaw($definition->getValue());
             }
         );
-        $compiler->method('getIdsToMapping')->willReturn(
+        $compiler->method('getMappingFromId')->willReturnMap(
             [
-                'id1' => 0,
-                'id2' => 1
+                ['id1', 0],
+                ['id2', 1]
             ]
         );
+        $compiler->method('hasDefinition')->willReturn(true);
 
         $definitionCompiler = new ClassDefinitionCompiler();
         $definitionCompiler->compile($definition, $compiler, $writer);
@@ -187,8 +205,8 @@ PHP;
         $definitionCompiler = new ClassDefinitionCompiler();
         $writer = new Writer();
 
-        $compiler = $this->getMockBuilder(Compiler::class)->onlyMethods(['getDefinitions'])->getMock();
-        $compiler->method('getDefinitions')->willReturn([]);
+        $compiler = $this->getMockBuilder(Compiler::class)->onlyMethods(['hasDefinition'])->getMock();
+        $compiler->method('hasDefinition')->willReturn(false);
 
         $definition = new ClassDefinition(
             ConstructorWithOneArgument::class,

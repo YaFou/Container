@@ -44,14 +44,14 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
         $value = $argument->getResolvedValue();
 
         if ($argument->isId()) {
-            if (isset($compiler->getDefinitions()[$value])) {
-                $argument = $compiler->getDefinitions()[$value];
+            if ($compiler->hasDefinition($value)) {
+                $argument = $compiler->getDefinition($value);
 
                 if ($argument->isShared()) {
                     $writer
                         ->writeRaw('$this->resolvedDefinitions[')
                         ->export($value)
-                        ->writeRaw("] ?? \$this->get{$compiler->getIdsToMapping()[$value]}()");
+                        ->writeRaw("] ?? \$this->get{$compiler->getMappingFromId($value)}()");
 
                     return;
                 }
