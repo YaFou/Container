@@ -2,13 +2,14 @@
 
 namespace YaFou\Container\Builder\Processor;
 
+use YaFou\Container\Builder\ContainerBuilder;
 use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 
-class TagArgumentContainerProcessor extends AbstractContainerProcessor
+class TagArgumentContainerProcessor implements ContainerProcessorInterface
 {
-    protected function doProcess()
+    public function process(ContainerBuilder $builder): void
     {
-        foreach ($this->definitions as $definition) {
+        foreach ($builder->getDefinitions() as $definition) {
             if ($definition instanceof ClassDefinitionBuilder) {
                 foreach ($definition->getArguments() as $index => $argument) {
                     if (is_string($argument) && '*' === $argument[0]) {
@@ -18,7 +19,7 @@ class TagArgumentContainerProcessor extends AbstractContainerProcessor
                             continue;
                         }
 
-                        $definitions = $this->getDefinitionsByTagAndPriority(substr($argument, 1));
+                        $definitions = $builder->getDefinitionsByTagAndPriority(substr($argument, 1));
 
                         $definitionsIds = array_map(function (string $id) {
                             return "@$id";

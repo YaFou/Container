@@ -16,6 +16,7 @@ use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\FactoryDefinition;
 use YaFou\Container\Definition\ValueDefinition;
+use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Proxy\ProxyManager;
 use YaFou\Container\Proxy\ProxyManagerInterface;
 use YaFou\Container\Tests\Fixtures\Builder\NoParentNoInterface;
@@ -155,7 +156,7 @@ class ContainerBuilderTest extends TestCase
     public function testEnableCompilation()
     {
         $file = sys_get_temp_dir(
-        ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
         @mkdir(dirname($file));
         $container = (new ContainerBuilder())
             ->enableCompilation($file)
@@ -169,7 +170,7 @@ class ContainerBuilderTest extends TestCase
     public function testEnableCompilationWithOptions()
     {
         $file = sys_get_temp_dir(
-        ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
         @mkdir(dirname($file));
         $container = (new ContainerBuilder())
             ->enableCompilation($file, ['class' => 'CustomClass', 'namespace' => 'CustomNamespace'])
@@ -198,7 +199,7 @@ PHP;
         $compiler->method('getCompiledContainerClass')->willReturn('CompiledContainer');
 
         $file = sys_get_temp_dir(
-        ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
         @mkdir(dirname($file));
 
         $container = (new ContainerBuilder())
@@ -281,15 +282,15 @@ PHP;
     {
         $processor1 = $this->createMock(ContainerProcessorInterface::class);
         $processor1->method('process')->willReturnCallback(
-            function (array &$definitions) {
-                unset($definitions['id1']);
+            function (ContainerBuilder $builder) {
+                $builder->removeDefinition('id1');
             }
         );
 
         $processor2 = $this->createMock(ContainerProcessorInterface::class);
         $processor2->method('process')->willReturnCallback(
-            function (array &$definitions) {
-                unset($definitions['id2']);
+            function (ContainerBuilder $builder) {
+                $builder->removeDefinition('id2');
             }
         );
 
@@ -318,5 +319,84 @@ PHP;
         );
 
         $this->assertEquals($container, $builder->build());
+    }
+
+    public function testGetDefinition()
+    {
+        $builder = new ContainerBuilder();
+        $definition = $builder->class('id', ConstructorWithNoArgument::class);
+        $this->assertSame($definition, $builder->getDefinition('id'));
+    }
+
+    public function testHasNotDefinition()
+    {
+        $builder = new ContainerBuilder();
+        $this->assertFalse($builder->hasDefinition('id'));
+    }
+
+    public function testHasDefinition()
+    {
+        $builder = new ContainerBuilder();
+        $builder->class('id', ConstructorWithNoArgument::class);
+        $this->assertTrue($builder->hasDefinition('id'));
+    }
+
+    public function testGetDefinitionWithNoDefinition()
+    {
+        $builder = new ContainerBuilder();
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('The definition with "id" was not found');
+        $builder->getDefinition('id');
+    }
+
+    public function testGetDefinitionsByTag()
+    {
+        $builder = new ContainerBuilder();
+        $definition1 = $builder->class('id1', ConstructorWithNoArgument::class)->tag('tag');
+        $definition2 = $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->class('id3', ConstructorWithNoArgument::class);
+        $this->assertSame(['id1' => $definition1, 'id2' => $definition2], $builder->getDefinitionsByTag('tag'));
+    }
+
+    public function testGetDefinitionsByTagAndPriority()
+    {
+        $builder = new ContainerBuilder();
+        $definition1 = $builder->class('id1', ConstructorWithNoArgument::class)->tag('tag');
+        $definition2 = $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag', ['priority' => -10]);
+        $definition3 = $builder->class('id3', ConstructorWithNoArgument::class)->tag('tag', ['priority' => 10]);
+        $builder->class('id4', ConstructorWithNoArgument::class);
+
+        $this->assertSame(
+            [
+                'id3' => $definition3,
+                'id1' => $definition1,
+                'id2' => $definition2
+            ],
+            $builder->getDefinitionsByTagAndPriority('tag')
+        );
+    }
+
+    public function testGetDefinitions()
+    {
+        $builder = new ContainerBuilder();
+        $definition1 = $builder->class('id1', ConstructorWithNoArgument::class);
+        $definition2 = $builder->class('id2', ConstructorWithNoArgument::class);
+        $this->assertSame(['id1' => $definition1, 'id2' => $definition2], $builder->getDefinitions());
+    }
+
+    public function testRemoveDefinition()
+    {
+        $builder = new ContainerBuilder();
+        $builder->class('id', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->removeDefinition('id');
+        $this->assertEmpty($builder->getDefinitions());
+    }
+
+    public function testRemoveDefinitionWithNoDefinition()
+    {
+        $builder = new ContainerBuilder();
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('The definition with "id" was not found');
+        $builder->removeDefinition('id');
     }
 }

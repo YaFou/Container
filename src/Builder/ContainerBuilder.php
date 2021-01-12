@@ -6,6 +6,7 @@ use YaFou\Container\Builder\Definition\AliasDefinitionBuilder;
 use YaFou\Container\Builder\Definition\BindingAwareInterface;
 use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 use YaFou\Container\Builder\Definition\CustomDefinitionBuilder;
+use YaFou\Container\Builder\Definition\DefinitionBuilderInterface;
 use YaFou\Container\Builder\Definition\FactoryDefinitionBuilder;
 use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
 use YaFou\Container\Builder\Processor\ContainerProcessorInterface;
@@ -15,6 +16,7 @@ use YaFou\Container\Compilation\CompilerInterface;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\AliasDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
+use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Proxy\ProxyManager;
 use YaFou\Container\Proxy\ProxyManagerInterface;
 
@@ -53,7 +55,7 @@ class ContainerBuilder
             return new $class($options);
         }
 
-        $container = new Container($this->getDefinitions(), $options);
+        $container = new Container($this->processDefinitions(), $options);
 
         if (null !== $this->compilationFile) {
             return $this->compile($container, $options);
@@ -62,10 +64,10 @@ class ContainerBuilder
         return $container;
     }
 
-    private function getDefinitions(): array
+    private function processDefinitions(): array
     {
         foreach ($this->processors as $processor) {
-            $processor->process($this->definitions);
+            $processor->process($this);
         }
 
         $bindings = [];
@@ -88,6 +90,11 @@ class ContainerBuilder
         }
 
         return $definitions;
+    }
+
+    public function getDefinitions(): array
+    {
+        return $this->definitions;
     }
 
     private function compile(Container $container, array $options): Container
@@ -175,5 +182,54 @@ class ContainerBuilder
         $this->processors = array_merge($this->processors, $processors);
 
         return $this;
+    }
+
+    public function getDefinition(string $id): DefinitionBuilderInterface
+    {
+        if (!$this->hasDefinition($id)) {
+            throw new NotFoundException(sprintf('The definition with "%s" was not found', $id));
+        }
+
+        return $this->definitions[$id];
+    }
+
+    public function hasDefinition(string $id): bool
+    {
+        return isset($this->definitions[$id]);
+    }
+
+    public function getDefinitionsByTag(string $tag): array
+    {
+        return array_filter($this->definitions, function (DefinitionBuilderInterface $definition) use ($tag) {
+            return $definition->hasTag($tag);
+        });
+    }
+
+    public function getDefinitionsByTagAndPriority(string $tag): array
+    {
+        $definitions = $this->getDefinitionsByTag($tag);
+
+        uasort(
+            $definitions,
+            function (
+                DefinitionBuilderInterface $definition1,
+                DefinitionBuilderInterface $definition2
+            ) use (
+                $tag
+            ) {
+                return ($definition2->getTag($tag)['priority'] ?? 0) - ($definition1->getTag($tag)['priority'] ?? 0);
+            }
+        );
+
+        return $definitions;
+    }
+
+    public function removeDefinition(string $id): void
+    {
+        if (!$this->hasDefinition($id)) {
+            throw new NotFoundException(sprintf('The definition with "%s" was not found', $id));
+        }
+
+        unset($this->definitions[$id]);
     }
 }

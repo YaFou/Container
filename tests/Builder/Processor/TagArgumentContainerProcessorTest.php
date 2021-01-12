@@ -3,6 +3,7 @@
 namespace YaFou\Container\Tests\Builder\Processor;
 
 use PHPUnit\Framework\TestCase;
+use YaFou\Container\Builder\ContainerBuilder;
 use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
 use YaFou\Container\Builder\Processor\TagArgumentContainerProcessor;
@@ -12,50 +13,52 @@ class TagArgumentContainerProcessorTest extends TestCase
 {
     public function testReplaceArgument()
     {
-        $definitions = [
-            'id1' => (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->arguments(['*tag', 'value']),
-            'id2' => (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->tag('tag'),
-            'id3' => (new ValueDefinitionBuilder('value'))->tag('tag'),
-            'id4' => new ClassDefinitionBuilder(ConstructorWithNoArgument::class)
-        ];
+        $builder = new ContainerBuilder();
+        $builder->class('id1', ConstructorWithNoArgument::class)->arguments(['*tag', 'value']);
+        $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->value('id3', 'value')->tag('tag');
+        $builder->class('id4', ConstructorWithNoArgument::class);
+
         $processor = new TagArgumentContainerProcessor();
-        $processor->process($definitions);
-        $this->assertSame(['@id2', '@id3'], $definitions['id1']->getArguments()[0]);
+        $processor->process($builder);
+
+        $definition = $builder->getDefinition('id1');
+        $this->assertSame(['@id2', '@id3'], $definition->getArguments()[0]);
+        $this->assertSame('value', $definition->getArguments()[1]);
     }
 
     public function testEscapeArgument()
     {
-        $definitions = [
-            'id1' => (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->argument(0, '**tag'),
-            'id2' => (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->tag('tag')
-        ];
+        $builder = new ContainerBuilder();
+        $builder->class('id1', ConstructorWithNoArgument::class)->arguments(['**tag']);
+        $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
+
         $processor = new TagArgumentContainerProcessor();
-        $processor->process($definitions);
-        $this->assertSame('*tag', $definitions['id1']->getArguments()[0]);
+        $processor->process($builder);
+
+        $this->assertSame('*tag', $builder->getDefinition('id1')->getArguments()[0]);
     }
 
     public function testReplaceByPriority()
     {
-        $definitions = [
-            'id1' => (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->argument(0, '*tag'),
-            'id2' => (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->tag('tag'),
-            'id3' => (new ValueDefinitionBuilder('value'))->tag('tag', ['priority' => -10]),
-            'id4' => (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->tag('tag', ['priority' => 10])
-        ];
+        $builder = new ContainerBuilder();
+        $builder->class('id1', ConstructorWithNoArgument::class)->arguments(['*tag']);
+        $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->value('id3', 'value')->tag('tag')->tag('tag');
+        $builder->class('id4', ConstructorWithNoArgument::class)->tag('tag', ['priority' => 10]);
+
         $processor = new TagArgumentContainerProcessor();
-        $processor->process($definitions);
-        $this->assertSame(['@id4', '@id2', '@id3'], $definitions['id1']->getArguments()[0]);
+        $processor->process($builder);
+
+        $this->assertSame(['@id4', '@id2', '@id3'], $builder->getDefinition('id1')->getArguments()[0]);
     }
 
-    public function testNotReplaceNullArgument()
+    public function testNotReplaceNonStringArgument()
     {
-        $expectedDefinitions = $definitions = [
-            'id' => (new ClassDefinitionBuilder(
-                ConstructorWithNoArgument::class
-            ))->argument(0, null)
-        ];
+        $builder = new ContainerBuilder();
+        $builder->class('id', ConstructorWithNoArgument::class)->argument(0, null);
         $processor = new TagArgumentContainerProcessor();
-        $processor->process($definitions);
-        $this->assertSame($expectedDefinitions, $definitions);
+        $processor->process($builder);
+        $this->assertNull($builder->getDefinition('id')->getArguments()[0]);
     }
 }

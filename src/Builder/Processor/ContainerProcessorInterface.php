@@ -2,7 +2,9 @@
 
 namespace YaFou\Container\Builder\Processor;
 
+use YaFou\Container\Builder\ContainerBuilder;
+
 interface ContainerProcessorInterface
 {
-    public function process(array &$definitions): void;
+    public function process(ContainerBuilder $builder): void;
 }
