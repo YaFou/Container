@@ -65,9 +65,12 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
                 $id = $argument[1];
 
                 if (is_array($id)) {
-                    $arguments[] = array_map(function (string $id) use ($container) {
-                        return $container->get($id);
-                    }, $id);
+                    $arguments[] = array_map(
+                        function (string $id) use ($container) {
+                            return $container->get($id);
+                        },
+                        $id
+                    );
 
                     continue;
                 }
@@ -98,7 +101,12 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
         $arguments = [];
 
         foreach ($constructor->getParameters() as $index => $parameter) {
-            if (isset($this->arguments[$name = $parameter->getName()]) || isset($this->arguments[$index])) {
+            if (
+                array_key_exists($name = $parameter->getName(), $this->arguments) || array_key_exists(
+                    $index,
+                    $this->arguments
+                )
+            ) {
                 $value = $this->arguments[$name] ?? $this->arguments[$index];
 
                 if (is_array($value)) {
@@ -111,9 +119,12 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
                     }
 
                     if ($dynamic) {
-                        $value = array_map(function (string $value) {
-                            return substr($value, 1);
-                        }, $value);
+                        $value = array_map(
+                            function (string $value) {
+                                return substr($value, 1);
+                            },
+                            $value
+                        );
                     }
 
                     $arguments[] = [$dynamic, $value];

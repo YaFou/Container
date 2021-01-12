@@ -40,7 +40,10 @@ abstract class AbstractContainerProcessor implements ContainerProcessorInterface
 
         uasort(
             $definitions,
-            function (DefinitionBuilderInterface $definition1, DefinitionBuilderInterface $definition2) use (
+            function (
+                DefinitionBuilderInterface $definition1,
+                DefinitionBuilderInterface $definition2
+            ) use (
                 $tag
             ) {
                 return ($definition2->getTag($tag)['priority'] ?? 0) - ($definition1->getTag($tag)['priority'] ?? 0);

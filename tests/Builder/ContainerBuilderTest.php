@@ -155,7 +155,7 @@ class ContainerBuilderTest extends TestCase
     public function testEnableCompilation()
     {
         $file = sys_get_temp_dir(
-            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+        ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
         @mkdir(dirname($file));
         $container = (new ContainerBuilder())
             ->enableCompilation($file)
@@ -169,7 +169,7 @@ class ContainerBuilderTest extends TestCase
     public function testEnableCompilationWithOptions()
     {
         $file = sys_get_temp_dir(
-            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+        ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
         @mkdir(dirname($file));
         $container = (new ContainerBuilder())
             ->enableCompilation($file, ['class' => 'CustomClass', 'namespace' => 'CustomNamespace'])
@@ -198,7 +198,7 @@ PHP;
         $compiler->method('getCompiledContainerClass')->willReturn('CompiledContainer');
 
         $file = sys_get_temp_dir(
-            ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
+        ) . DIRECTORY_SEPARATOR . 'YaFou-Container' . DIRECTORY_SEPARATOR . 'CompiledContainer.php';
         @mkdir(dirname($file));
 
         $container = (new ContainerBuilder())

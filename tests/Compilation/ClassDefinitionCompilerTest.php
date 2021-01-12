@@ -3,6 +3,7 @@
 namespace YaFou\Container\Tests\Compilation;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use YaFou\Container\Compilation\ClassDefinitionCompiler;
 use YaFou\Container\Compilation\Compiler;
 use YaFou\Container\Container;
@@ -167,11 +168,28 @@ class ClassDefinitionCompilerTest extends TestCase
         $definitionCompiler = new ClassDefinitionCompiler();
         $definitionCompiler->compile($definition, $compiler, $writer);
 
-        $this->assertSame(
-            'new \YaFou\Container\Tests\Fixtures\ConstructorWithArrayArgument(' .
-            '[$this->resolvedDefinitions[\'id1\'] ?? $this->get0(), ' .
-            '$this->resolvedDefinitions[\'id2\'] ?? $this->get1()])',
-            $writer->getCode()
-        );
+        $code = <<<'PHP'
+new \YaFou\Container\Tests\Fixtures\ConstructorWithArrayArgument([
+    $this->resolvedDefinitions['id1'] ?? $this->get0(),
+    $this->resolvedDefinitions['id2'] ?? $this->get1()
+])
+PHP;
+
+
+        $this->assertSame($code, $writer->getCode());
+    }
+
+    public function testWithContainerArgument()
+    {
+        $definitionCompiler = new ClassDefinitionCompiler();
+        $writer = new Writer();
+
+        $compiler = $this->getMockBuilder(Compiler::class)->onlyMethods(['getDefinitions'])->getMock();
+        $compiler->method('getDefinitions')->willReturn([]);
+
+        $definition = new ClassDefinition(ConstructorWithOneArgument::class, true, false, ['@Psr\Container\ContainerInterface']);
+        $definition->resolve(new Container([]));
+        $definitionCompiler->compile($definition, $compiler, $writer);
+        $this->assertSame('new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this)', $writer->getCode());
     }
 }

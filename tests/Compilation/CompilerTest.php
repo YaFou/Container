@@ -8,6 +8,7 @@ use YaFou\Container\Compilation\DefinitionCompilerInterface;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
+use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\CompilationException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
@@ -352,5 +353,42 @@ PHP;
         $compiler = new Compiler();
         $this->assertSame($expected, $compiler->compile([]));
         $this->assertSame($expected, $compiler->compile([]));
+    }
+
+    public function testTwoGettersWithSameDefinition()
+    {
+        $expected = <<<'PHP'
+<?php
+
+namespace __Cache__;
+
+use YaFou\Container\Compilation\AbstractCompiledContainer;
+
+class CompiledContainer extends AbstractCompiledContainer
+{
+    protected const MAPPINGS = [
+        'id1' => 0,
+        'id2' => 1,
+    ];
+
+    protected function get0()
+    {
+        return $this->resolvedDefinitions['id1'] = 'value1';
+    }
+
+    protected function get1()
+    {
+        return $this->resolvedDefinitions['id2'] = 'value2';
+    }
+}
+
+PHP;
+
+        $compiler = new Compiler();
+        $definitions = [
+            'id1' => new ValueDefinition('value1'),
+            'id2' => new ValueDefinition('value2')
+        ];
+        $this->assertSame($expected, $compiler->compile($definitions));
     }
 }

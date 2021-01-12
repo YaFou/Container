@@ -32,11 +32,11 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
                 if (is_array($id)) {
                     $needCommaIds = false;
 
-                    $writer->writeRaw('[');
+                    $writer->writeRaw('[')->indent()->write('');
 
                     foreach ($id as $subId) {
                         if ($needCommaIds) {
-                            $writer->writeRaw(', ');
+                            $writer->writeRaw(',')->newLine()->write('');
                         } else {
                             $needCommaIds = true;
                         }
@@ -44,7 +44,7 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
                         $this->compileArgument($compiler, $writer, $subId);
                     }
 
-                    $writer->writeRaw(']');
+                    $writer->outdent()->write(']');
 
                     continue;
                 }
@@ -62,18 +62,24 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
 
     private function compileArgument(Compiler $compiler, WriterInterface $writer, string $id): void
     {
-        $definition = $compiler->getDefinitions()[$id];
+        if (isset($compiler->getDefinitions()[$id])) {
+            $definition = $compiler->getDefinitions()[$id];
 
-        if ($definition->isShared()) {
-            $writer
-                ->writeRaw('$this->resolvedDefinitions[')
-                ->export($id)
-                ->writeRaw("] ?? \$this->get{$compiler->getIdsToMapping()[$id]}()");
+            if ($definition->isShared()) {
+                $writer
+                    ->writeRaw('$this->resolvedDefinitions[')
+                    ->export($id)
+                    ->writeRaw("] ?? \$this->get{$compiler->getIdsToMapping()[$id]}()");
+
+                return;
+            }
+
+            $compiler->generateGetter($definition);
 
             return;
         }
 
-        $compiler->generateGetter($definition);
+        $writer->writeRaw('$this');
     }
 
     public function supports(DefinitionInterface $definition): bool

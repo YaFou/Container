@@ -113,7 +113,9 @@ class FactoryDefinitionBuilderTest extends AbstractDefinitionBuilderTest
         $this->assertEquals(
             new FactoryDefinition(
                 function () {
-                }, true, ConstructorWithNoArgument::class
+                },
+                true,
+                ConstructorWithNoArgument::class
             ),
             $builder->build()
         );

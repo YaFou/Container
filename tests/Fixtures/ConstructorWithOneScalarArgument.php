@@ -9,7 +9,7 @@ class ConstructorWithOneScalarArgument
      */
     public $scalar;
 
-    public function __construct(bool $scalar)
+    public function __construct(?bool $scalar)
     {
         $this->scalar = $scalar;
     }

@@ -124,14 +124,16 @@ class ProxyManagerTest extends TestCase
 
         $proxy = $manager->getProxy(
             ConstructorWithNoArgument::class,
-            function () {}
+            function () {
+            }
         );
 
         $this->assertInstanceOf(ConstructorWithNoArgument::class, $proxy);
 
         $proxy = $manager->getProxy(
             ConstructorWithOneArgument::class,
-            function () {}
+            function () {
+            }
         );
 
         $this->assertInstanceOf(ConstructorWithOneArgument::class, $proxy);

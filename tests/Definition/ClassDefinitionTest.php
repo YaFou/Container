@@ -154,4 +154,10 @@ class ClassDefinitionTest extends TestCase
         $definition = new ClassDefinition(ConstructorWithArrayArgument::class, true, false, [['@id1', '@@id2', null]]);
         $this->assertSame(['@id1', '@@id2', null], $definition->get(new Container([]))->array);
     }
+
+    public function testResolveArgumentNull()
+    {
+        $definition = new ClassDefinition(ConstructorWithOneScalarArgument::class, true, false, [null]);
+        $this->assertNull($definition->get(new Container([]))->scalar);
+    }
 }

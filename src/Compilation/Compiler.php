@@ -186,6 +186,8 @@ class Compiler implements CompilerInterface
 
         if (isset($this->resolvedDefinitionCompilers[$definitionClass = get_class($definition)])) {
             $this->resolvedDefinitionCompilers[$definitionClass]->compile($definition, $this, $this->writer);
+
+            return;
         }
 
         foreach ($this->definitionCompilers as $definitionCompiler) {
