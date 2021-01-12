@@ -10,6 +10,7 @@ use YaFou\Container\Builder\Definition\DefinitionBuilderInterface;
 use YaFou\Container\Builder\Definition\FactoryDefinitionBuilder;
 use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
 use YaFou\Container\Builder\Processor\ContainerProcessorInterface;
+use YaFou\Container\Builder\Processor\GlobalArgumentsContainerProcessor;
 use YaFou\Container\Builder\Processor\TagArgumentContainerProcessor;
 use YaFou\Container\Compilation\Compiler;
 use YaFou\Container\Compilation\CompilerInterface;
@@ -34,11 +35,14 @@ class ContainerBuilder
      * @var bool
      */
     private $autoBinding = true;
-    private $processors;
+    private $processors = [];
 
     public function __construct()
     {
-        $this->processors = [new TagArgumentContainerProcessor()];
+        $this->addProcessors(
+            new TagArgumentContainerProcessor(),
+            new GlobalArgumentsContainerProcessor()
+        );
     }
 
     public function build(): Container
@@ -231,5 +235,28 @@ class ContainerBuilder
         }
 
         unset($this->definitions[$id]);
+    }
+
+    public function globalArgument(string $name, $value): self
+    {
+        $this->processors[1]->addGlobalArgument($name, $value);
+
+        return $this;
+    }
+
+    public function globalArguments(array $globalArguments): self
+    {
+        $this->processors[1]->addGlobalArguments($globalArguments);
+
+        return $this;
+    }
+
+    public function values(array $values): self
+    {
+        foreach ($values as $id => $value) {
+            $this->value($id, $value);
+        }
+
+        return $this;
     }
 }

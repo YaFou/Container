@@ -16,6 +16,7 @@ use YaFou\Container\Tests\Fixtures\ConstructorWithOneDefaultArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneDefaultClassArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneStringArgument;
+use YaFou\Container\Tests\Fixtures\ConstructorWithUnknownClassArgument;
 use YaFou\Container\Tests\Fixtures\ExtendedConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\FinalClass;
 use YaFou\Container\Tests\Fixtures\PrivateConstructor;
@@ -167,5 +168,13 @@ class ClassDefinitionTest extends TestCase
     {
         $definition = new ClassDefinition(ConstructorWithOneDefaultClassArgument::class);
         $this->assertNull($definition->get(new Container([]))->class);
+    }
+
+    public function testClassArgumentNotExists()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The class "YaFou\Container\Tests\Fixtures\UnknownClass" does not exist');
+        $definition = new ClassDefinition(ConstructorWithUnknownClassArgument::class);
+        $definition->resolve(new Container([]));
     }
 }

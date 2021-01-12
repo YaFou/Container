@@ -22,6 +22,8 @@ use YaFou\Container\Proxy\ProxyManagerInterface;
 use YaFou\Container\Tests\Fixtures\Builder\NoParentNoInterface;
 use YaFou\Container\Tests\Fixtures\Builder\OneParentNoInterface;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
+use YaFou\Container\Tests\Fixtures\ConstructorWithTwoScalarArguments;
 
 class ContainerBuilderTest extends TestCase
 {
@@ -398,5 +400,52 @@ PHP;
         $this->expectException(NotFoundException::class);
         $this->expectExceptionMessage('The definition with "id" was not found');
         $builder->removeDefinition('id');
+    }
+
+    public function testGlobalArgument()
+    {
+        $builder = new ContainerBuilder();
+        $builder->globalArgument('scalar', false);
+        $builder->class(ConstructorWithOneScalarArgument::class);
+        $container = $builder->build();
+        $this->assertFalse($container->get(ConstructorWithOneScalarArgument::class)->scalar);
+    }
+
+    public function testGlobalArguments()
+    {
+        $builder = new ContainerBuilder();
+        $builder->class(ConstructorWithTwoScalarArguments::class);
+        $builder->globalArguments(
+            [
+                'parameter1' => 'argument1',
+                'parameter2' => 'argument2'
+            ]
+        );
+
+        $container = $builder->build();
+        $this->assertSame('argument1', $container->get(ConstructorWithTwoScalarArguments::class)->parameter1);
+        $this->assertSame('argument2', $container->get(ConstructorWithTwoScalarArguments::class)->parameter2);
+    }
+
+    public function testValues()
+    {
+        $builder = new ContainerBuilder();
+        $builder->values(
+            [
+                'id1' => 'value1',
+                'id2' => 'value2',
+                'id3' => 'value3',
+            ]
+        );
+
+        $container = new Container(
+            [
+                'id1' => new ValueDefinition('value1'),
+                'id2' => new ValueDefinition('value2'),
+                'id3' => new ValueDefinition('value3')
+            ]
+        );
+
+        $this->assertEquals($container, $builder->build());
     }
 }
