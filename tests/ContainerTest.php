@@ -16,6 +16,7 @@ use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Proxy\ProxyManagerInterface;
 use YaFou\Container\Tests\Fixtures\ConstructorWithContainerArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneDefaultInterfaceArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
 use YaFou\Container\Tests\Fixtures\DoubleExtendedContainer;
 use YaFou\Container\Tests\Fixtures\ExtendedContainer;
@@ -249,5 +250,14 @@ class ContainerTest extends TestCase
     {
         $container = new Container([]);
         $this->assertTrue($container->has(ConstructorWithContainerArgument::class));
+    }
+
+    public function testRemovingUnknownClassFromDefinitionsInResolving()
+    {
+        $container = new Container(
+            ['id' => new ClassDefinition(ConstructorWithOneDefaultInterfaceArgument::class, false)]
+        );
+        $this->assertInstanceOf(ConstructorWithOneDefaultInterfaceArgument::class, $container->get('id'));
+        $this->assertInstanceOf(ConstructorWithOneDefaultInterfaceArgument::class, $container->get('id'));
     }
 }

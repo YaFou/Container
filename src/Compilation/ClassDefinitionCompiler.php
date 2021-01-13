@@ -69,7 +69,7 @@ class ClassDefinitionCompiler implements DefinitionCompilerInterface
         if (is_array($value)) {
             $needComma = false;
             $writer
-                ->write('[')
+                ->writeRaw('[')
                 ->indent()
                 ->write('');
 

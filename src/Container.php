@@ -82,17 +82,14 @@ class Container implements ContainerInterface
             return $this->resolvedDefinitions[$id];
         }
 
-        if ($this->has($id)) {
-            $definition = $this->definitions[$id];
+        $this->resolveDefinition($id);
+        $definition = $this->definitions[$id];
 
-            if (!$definition->isShared()) {
-                return $this->getInstance($definition);
-            }
-
-            return $this->resolvedDefinitions[$id] = $this->getInstance($definition);
+        if (!$definition->isShared()) {
+            return $this->getInstance($definition);
         }
 
-        throw new NotFoundException(sprintf('The id "%s" was not found', $id));
+        return $this->resolvedDefinitions[$id] = $this->getInstance($definition);
     }
 
     private function getInstance(DefinitionInterface $definition)
@@ -171,8 +168,11 @@ class Container implements ContainerInterface
         }
 
         $this->definitionsInResolving[] = $id;
-        $this->getDefinition($id)->resolve($this);
-        array_pop($this->definitionsInResolving);
+        try {
+            $this->getDefinition($id)->resolve($this);
+        } finally {
+            array_pop($this->definitionsInResolving);
+        }
     }
 
     private function getDefinition(string $id): DefinitionInterface

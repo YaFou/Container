@@ -14,6 +14,7 @@ use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneDefaultArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneDefaultClassArgument;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneDefaultInterfaceArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneStringArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithUnknownClassArgument;
@@ -176,5 +177,11 @@ class ClassDefinitionTest extends TestCase
         $this->expectExceptionMessage('The class "YaFou\Container\Tests\Fixtures\UnknownClass" does not exist');
         $definition = new ClassDefinition(ConstructorWithUnknownClassArgument::class);
         $definition->resolve(new Container([]));
+    }
+
+    public function testUseDefaultArgumentWhenTheArgumentIsUnknownInterface()
+    {
+        $definition = new ClassDefinition(ConstructorWithOneDefaultInterfaceArgument::class);
+        $this->assertNull($definition->get(new Container([]))->interface);
     }
 }
