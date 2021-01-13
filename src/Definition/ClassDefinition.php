@@ -103,7 +103,7 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
 
                     continue;
                 }
-            } catch (\ReflectionException $e) {
+            } catch (\ReflectionException | InvalidArgumentException $e) {
                 if (!$parameter->isDefaultValueAvailable()) {
                     throw new InvalidArgumentException(
                         sprintf('The class "%s" does not exist', $parameter->getType()->getName())

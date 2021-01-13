@@ -9,6 +9,7 @@ use YaFou\Container\Builder\Definition\CustomDefinitionBuilder;
 use YaFou\Container\Builder\Definition\DefinitionBuilderInterface;
 use YaFou\Container\Builder\Definition\FactoryDefinitionBuilder;
 use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Processor\AutoTagContainerProcessor;
 use YaFou\Container\Builder\Processor\ContainerProcessorInterface;
 use YaFou\Container\Builder\Processor\GlobalArgumentsContainerProcessor;
 use YaFou\Container\Builder\Processor\TagArgumentContainerProcessor;
@@ -36,14 +37,12 @@ class ContainerBuilder
      */
     private $autoBinding = true;
     private $processors = [];
-
-    public function __construct()
-    {
-        $this->addProcessors(
-            new TagArgumentContainerProcessor(),
-            new GlobalArgumentsContainerProcessor()
-        );
-    }
+    private $globalArguments = [];
+    private $autoTags = [];
+    /**
+     * @var false
+     */
+    private $autoTag = true;
 
     public function build(): Container
     {
@@ -59,7 +58,8 @@ class ContainerBuilder
             return new $class($options);
         }
 
-        $container = new Container($this->processDefinitions(), $options);
+        $this->processDefinitions();
+        $container = new Container($this->buildDefinitions(), $options);
 
         if (null !== $this->compilationFile) {
             return $this->compile($container, $options);
@@ -68,12 +68,46 @@ class ContainerBuilder
         return $container;
     }
 
-    private function processDefinitions(): array
+    private function processDefinitions(): void
     {
-        foreach ($this->processors as $processor) {
-            $processor->process($this);
+        $this->addProcessors(
+            [
+                [new GlobalArgumentsContainerProcessor($this->globalArguments), -80],
+                [new TagArgumentContainerProcessor(), -100]
+            ]
+        );
+
+        if ($this->autoTag) {
+            $this->addProcessor(new AutoTagContainerProcessor($this->autoTags), -50);
         }
 
+        foreach ($this->processors as $processors) {
+            foreach ($processors as $processor) {
+                $processor->process($this);
+            }
+        }
+    }
+
+    public function addProcessors(array $processors): self
+    {
+        foreach ($processors as $processor) {
+            is_array($processor) ? $this->addProcessor($processor[0], $processor[1] ?? 0) : $this->addProcessor(
+                $processor
+            );
+        }
+
+        return $this;
+    }
+
+    public function addProcessor(ContainerProcessorInterface $processor, int $priority = 0): self
+    {
+        $this->processors[$priority][] = $processor;
+
+        return $this;
+    }
+
+    private function buildDefinitions(): array
+    {
         $bindings = [];
         $definitions = [];
 
@@ -96,11 +130,6 @@ class ContainerBuilder
         return $definitions;
     }
 
-    public function getDefinitions(): array
-    {
-        return $this->definitions;
-    }
-
     private function compile(Container $container, array $options): Container
     {
         $container->validate();
@@ -111,6 +140,11 @@ class ContainerBuilder
         $class = $this->compiler->getCompiledContainerClass();
 
         return new $class($options);
+    }
+
+    public function getDefinitions(): array
+    {
+        return $this->definitions;
     }
 
     public function setLocked(bool $locked = true): self
@@ -147,11 +181,6 @@ class ContainerBuilder
         return $this->definitions[$id] = new AliasDefinitionBuilder($alias);
     }
 
-    public function value(string $id, $value): ValueDefinitionBuilder
-    {
-        return $this->definitions[$id] = new ValueDefinitionBuilder($value);
-    }
-
     public function addDefinition(string $id, DefinitionInterface $definition): self
     {
         $this->definitions[$id] = new CustomDefinitionBuilder($definition);
@@ -181,13 +210,6 @@ class ContainerBuilder
         return $this;
     }
 
-    public function addProcessors(ContainerProcessorInterface ...$processors): self
-    {
-        $this->processors = array_merge($this->processors, $processors);
-
-        return $this;
-    }
-
     public function getDefinition(string $id): DefinitionBuilderInterface
     {
         if (!$this->hasDefinition($id)) {
@@ -200,13 +222,6 @@ class ContainerBuilder
     public function hasDefinition(string $id): bool
     {
         return isset($this->definitions[$id]);
-    }
-
-    public function getDefinitionsByTag(string $tag): array
-    {
-        return array_filter($this->definitions, function (DefinitionBuilderInterface $definition) use ($tag) {
-            return $definition->hasTag($tag);
-        });
     }
 
     public function getDefinitionsByTagAndPriority(string $tag): array
@@ -228,6 +243,16 @@ class ContainerBuilder
         return $definitions;
     }
 
+    public function getDefinitionsByTag(string $tag): array
+    {
+        return array_filter(
+            $this->definitions,
+            function (DefinitionBuilderInterface $definition) use ($tag) {
+                return $definition->hasTag($tag);
+            }
+        );
+    }
+
     public function removeDefinition(string $id): void
     {
         if (!$this->hasDefinition($id)) {
@@ -239,14 +264,14 @@ class ContainerBuilder
 
     public function globalArgument(string $name, $value): self
     {
-        $this->processors[1]->addGlobalArgument($name, $value);
+        $this->globalArguments[$name] = $value;
 
         return $this;
     }
 
     public function globalArguments(array $globalArguments): self
     {
-        $this->processors[1]->addGlobalArguments($globalArguments);
+        $this->globalArguments = array_merge($this->globalArguments, $globalArguments);
 
         return $this;
     }
@@ -256,6 +281,47 @@ class ContainerBuilder
         foreach ($values as $id => $value) {
             $this->value($id, $value);
         }
+
+        return $this;
+    }
+
+    public function value(string $id, $value): ValueDefinitionBuilder
+    {
+        return $this->definitions[$id] = new ValueDefinitionBuilder($value);
+    }
+
+    public function autoTags(array $tags): self
+    {
+        foreach ($tags as $class => $tag) {
+            if (is_array($tag)) {
+                foreach ($tag as $tagName => $tagParameters) {
+                    if (is_string($tagParameters)) {
+                        $tagName = $tagParameters;
+                        $tagParameters = [];
+                    }
+
+                    $this->autoTag($class, $tagName, $tagParameters);
+                }
+
+                continue;
+            }
+
+            $this->autoTag($class, $tag);
+        }
+
+        return $this;
+    }
+
+    public function autoTag(string $class, string $tag, array $parameters = []): self
+    {
+        $this->autoTags[$class][$tag] = $parameters;
+
+        return $this;
+    }
+
+    public function disableAutoTag(): self
+    {
+        $this->autoTag = false;
 
         return $this;
     }

@@ -7,7 +7,12 @@ use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 
 class GlobalArgumentsContainerProcessor implements ContainerProcessorInterface
 {
-    private $globalArguments = [];
+    private $globalArguments;
+
+    public function __construct(array $globalArguments)
+    {
+        $this->globalArguments = $globalArguments;
+    }
 
     public function process(ContainerBuilder $builder): void
     {
@@ -44,15 +49,5 @@ class GlobalArgumentsContainerProcessor implements ContainerProcessorInterface
         }
 
         return false;
-    }
-
-    public function addGlobalArgument(string $name, $value): void
-    {
-        $this->globalArguments[$name] = $value;
-    }
-
-    public function addGlobalArguments(array $globalArguments): void
-    {
-        $this->globalArguments = array_merge($this->globalArguments, $globalArguments);
     }
 }

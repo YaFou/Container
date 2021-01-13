@@ -22,6 +22,7 @@ use YaFou\Container\Proxy\ProxyManagerInterface;
 use YaFou\Container\Tests\Fixtures\Builder\NoParentNoInterface;
 use YaFou\Container\Tests\Fixtures\Builder\OneParentNoInterface;
 use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
 use YaFou\Container\Tests\Fixtures\ConstructorWithTwoScalarArguments;
 
@@ -296,12 +297,119 @@ PHP;
             }
         );
 
-        $builder = (new ContainerBuilder())->addProcessors($processor1, $processor2);
+        $builder = (new ContainerBuilder())->addProcessors([$processor1, $processor2]);
         $builder->class('id1', ConstructorWithNoArgument::class);
         $builder->class('id2', ConstructorWithNoArgument::class);
         $builder->class('id3', ConstructorWithNoArgument::class);
 
         $container = new Container(['id3' => new ClassDefinition(ConstructorWithNoArgument::class)]);
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testAddProcessor()
+    {
+        $processor = $this->createMock(ContainerProcessorInterface::class);
+        $processor->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->removeDefinition('id1');
+            }
+        );
+
+        $builder = (new ContainerBuilder())->addProcessor($processor);
+        $builder->class('id1', ConstructorWithNoArgument::class);
+        $builder->class('id2', ConstructorWithNoArgument::class);
+
+        $container = new Container(['id2' => new ClassDefinition(ConstructorWithNoArgument::class)]);
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testAddProcessorWithPriority()
+    {
+        $processor1 = $this->createMock(ContainerProcessorInterface::class);
+        $processor1->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->alias('alias', 'id');
+            }
+        );
+
+        $processor2 = $this->createMock(ContainerProcessorInterface::class);
+        $processor2->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->removeDefinition('alias');
+            }
+        );
+
+        $processor3 = $this->createMock(ContainerProcessorInterface::class);
+        $processor3->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->alias('new_alias', 'id');
+            }
+        );
+
+        $builder = (new ContainerBuilder())
+            ->addProcessor($processor3, -10)
+            ->addProcessor($processor1, 10)
+            ->addProcessor($processor2);
+
+        $container = new Container(['new_alias' => new AliasDefinition('id')]);
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testAddProcessorsWithPriority()
+    {
+        $processor1 = $this->createMock(ContainerProcessorInterface::class);
+        $processor1->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->alias('alias', 'id');
+            }
+        );
+
+        $processor2 = $this->createMock(ContainerProcessorInterface::class);
+        $processor2->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->removeDefinition('alias');
+            }
+        );
+
+        $processor3 = $this->createMock(ContainerProcessorInterface::class);
+        $processor3->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->alias('new_alias', 'id');
+            }
+        );
+
+        $builder = (new ContainerBuilder())->addProcessors([[$processor3, -10], [$processor1, 10], $processor2]);
+
+        $container = new Container(['new_alias' => new AliasDefinition('id')]);
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testAddProcessorsWithPriorityWithOneElementArray()
+    {
+        $processor1 = $this->createMock(ContainerProcessorInterface::class);
+        $processor1->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->alias('alias', 'id');
+            }
+        );
+
+        $processor2 = $this->createMock(ContainerProcessorInterface::class);
+        $processor2->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->removeDefinition('alias');
+            }
+        );
+
+        $processor3 = $this->createMock(ContainerProcessorInterface::class);
+        $processor3->method('process')->willReturnCallback(
+            function (ContainerBuilder $builder) {
+                $builder->alias('new_alias', 'id');
+            }
+        );
+
+        $builder = (new ContainerBuilder())->addProcessors([[$processor3, -10], [$processor1, 10], [$processor2]]);
+
+        $container = new Container(['new_alias' => new AliasDefinition('id')]);
         $this->assertEquals($container, $builder->build());
     }
 
@@ -447,5 +555,73 @@ PHP;
         );
 
         $this->assertEquals($container, $builder->build());
+    }
+
+    public function testAutoTag()
+    {
+        $builder = (new ContainerBuilder())->autoTag(ConstructorWithNoArgument::class, 'tag');
+        $definition = $builder->class(ConstructorWithNoArgument::class);
+        $builder->build();
+        $this->assertTrue($definition->hasTag('tag'));
+    }
+
+    public function testAutoTagWithParameters()
+    {
+        $builder = (new ContainerBuilder())->autoTag(ConstructorWithNoArgument::class, 'tag', ['parameter' => 'value']);
+        $definition = $builder->class(ConstructorWithNoArgument::class);
+        $builder->build();
+        $this->assertSame(['parameter' => 'value'], $definition->getTag('tag'));
+    }
+
+    public function testAutoTagsWithString()
+    {
+        $builder = (new ContainerBuilder())->autoTags(
+            [ConstructorWithNoArgument::class => 'tag1', ConstructorWithOneArgument::class => 'tag2']
+        );
+        $definition1 = $builder->class(ConstructorWithNoArgument::class);
+        $definition2 = $builder->class(ConstructorWithOneArgument::class);
+        $builder->build();
+        $this->assertTrue($definition1->hasTag('tag1'));
+        $this->assertTrue($definition2->hasTag('tag2'));
+    }
+
+    public function testAutoTagsWithArray()
+    {
+        $builder = (new ContainerBuilder())->autoTags(
+            [
+                ConstructorWithNoArgument::class => ['tag1', 'tag2'],
+                ConstructorWithOneArgument::class => 'tag3'
+            ]
+        );
+        $definition1 = $builder->class(ConstructorWithNoArgument::class);
+        $definition2 = $builder->class(ConstructorWithOneArgument::class);
+        $builder->build();
+        $this->assertTrue($definition1->hasTag('tag1'));
+        $this->assertTrue($definition1->hasTag('tag2'));
+        $this->assertTrue($definition2->hasTag('tag3'));
+    }
+
+    public function testAutoTagsWithArrayAndParameters()
+    {
+        $builder = (new ContainerBuilder())->autoTags(
+            [
+                ConstructorWithNoArgument::class => ['tag1' => ['parameter' => 'value'], 'tag2'],
+                ConstructorWithOneArgument::class => 'tag3'
+            ]
+        );
+        $definition1 = $builder->class(ConstructorWithNoArgument::class);
+        $definition2 = $builder->class(ConstructorWithOneArgument::class);
+        $builder->build();
+        $this->assertSame(['parameter' => 'value'], $definition1->getTag('tag1'));
+        $this->assertTrue($definition1->hasTag('tag2'));
+        $this->assertTrue($definition2->hasTag('tag3'));
+    }
+
+    public function testDisableAutoTag()
+    {
+        $builder = (new ContainerBuilder())->disableAutoTag()->autoTag(ConstructorWithNoArgument::class, 'tag');
+        $definition = $builder->class(ConstructorWithNoArgument::class);
+        $builder->build();
+        $this->assertFalse($definition->hasTag('tag'));
     }
 }
