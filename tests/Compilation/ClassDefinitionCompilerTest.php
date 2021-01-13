@@ -14,10 +14,13 @@ use YaFou\Container\Tests\Fixtures\NoArgument;
 use YaFou\Container\Tests\Fixtures\ClassArgument;
 use YaFou\Container\Tests\Fixtures\DefaultArgument;
 use YaFou\Container\Tests\Fixtures\TwoClassArguments;
+use YaFou\Container\Tests\TestTrait;
 use YaFou\Container\Writer\Writer;
 
 class ClassDefinitionCompilerTest extends TestCase
 {
+    use TestTrait;
+
     public function testSupports()
     {
         $definitionCompiler = new ClassDefinitionCompiler();
@@ -200,7 +203,7 @@ new \YaFou\Container\Tests\Fixtures\ArrayArgument([
 PHP;
 
 
-        $this->assertSame($code, $writer->getCode());
+        $this->assertSameStrings($code, $writer->getCode());
     }
 
     public function testWithContainerArgument()

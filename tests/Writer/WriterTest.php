@@ -3,10 +3,13 @@
 namespace YaFou\Container\Tests\Writer;
 
 use PHPUnit\Framework\TestCase;
+use YaFou\Container\Tests\TestTrait;
 use YaFou\Container\Writer\Writer;
 
 class WriterTest extends TestCase
 {
+    use TestTrait;
+
     public function testEmpty()
     {
         $writer = new Writer();
@@ -28,25 +31,25 @@ class WriterTest extends TestCase
     public function testWriteln()
     {
         $writer = (new Writer())->writeln('code');
-        $this->assertSame("code\n", $writer->getCode());
+        $this->assertSameStrings("code\n", $writer->getCode());
     }
 
     public function testNewLine()
     {
         $writer = (new Writer())->newLine();
-        $this->assertSame("\n", $writer->getCode());
+        $this->assertSameStrings("\n", $writer->getCode());
     }
 
     public function testMultipleNewLines()
     {
         $writer = (new Writer())->newLine(2);
-        $this->assertSame("\n\n", $writer->getCode());
+        $this->assertSameStrings("\n\n", $writer->getCode());
     }
 
     public function testWritelnWithMultipleNewLines()
     {
         $writer = (new Writer())->writeln('code', 2);
-        $this->assertSame("code\n\n", $writer->getCode());
+        $this->assertSameStrings("code\n\n", $writer->getCode());
     }
 
     public function testExport()
@@ -58,7 +61,7 @@ class WriterTest extends TestCase
     public function testWriteWithOneIndent()
     {
         $writer = (new Writer())->indent()->write('code');
-        $this->assertSame("\n    code", $writer->getCode());
+        $this->assertSameStrings("\n    code", $writer->getCode());
     }
 
     public function testWriteWithTwoIndent()
@@ -68,7 +71,7 @@ class WriterTest extends TestCase
             ->indent()
             ->write('code');
 
-        $this->assertSame("\n\n        code", $writer->getCode());
+        $this->assertSameStrings("\n\n        code", $writer->getCode());
     }
 
     public function testWriteWithOneIndentAndOneOutdent()
@@ -80,13 +83,13 @@ class WriterTest extends TestCase
             ->outdent()
             ->write('code 3');
 
-        $this->assertSame("code 1\n    code 2\ncode 3", $writer->getCode());
+        $this->assertSameStrings("code 1\n    code 2\ncode 3", $writer->getCode());
     }
 
     public function testIndentWithMultipleNewLines()
     {
         $writer = (new Writer())->indent(2)->write('code');
-        $this->assertSame("\n\n    code", $writer->getCode());
+        $this->assertSameStrings("\n\n    code", $writer->getCode());
     }
 
     public function testOutdentWithMultipleNewLines()
@@ -97,7 +100,7 @@ class WriterTest extends TestCase
             ->outdent(2)
             ->write('code 2');
 
-        $this->assertSame("\n    code 1\n\ncode 2", $writer->getCode());
+        $this->assertSameStrings("\n    code 1\n\ncode 2", $writer->getCode());
     }
 
     public function testClear()

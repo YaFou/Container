@@ -13,11 +13,14 @@ use YaFou\Container\Exception\CompilationException;
 use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Tests\Fixtures\NoArgument;
+use YaFou\Container\Tests\TestTrait;
 use YaFou\Container\Writer\Writer;
 use YaFou\Container\Writer\WriterInterface;
 
 class CompilerTest extends TestCase
 {
+    use TestTrait;
+
     public function testEmpty()
     {
         $expected = <<<'PHP'
@@ -37,7 +40,7 @@ PHP;
 
         $compiler = new Compiler();
         $actual = $compiler->compile([]);
-        $this->assertSame($expected, $actual);
+        $this->assertSameStrings($expected, $actual);
     }
 
     public function testOneDefinition()
@@ -67,7 +70,7 @@ PHP;
         $actual = $compiler->compile(
             $this->resolveDefinitions(['id' => new ClassDefinition(NoArgument::class)])
         );
-        $this->assertSame($expected, $actual);
+        $this->assertSameStrings($expected, $actual);
     }
 
     /**
@@ -112,7 +115,7 @@ PHP;
         $actual = $compiler->compile(
             $this->resolveDefinitions(['id' => new ClassDefinition(NoArgument::class, false)])
         );
-        $this->assertSame($expected, $actual);
+        $this->assertSameStrings($expected, $actual);
     }
 
     public function testDefinitionLazy()
@@ -144,7 +147,7 @@ PHP;
         $actual = $compiler->compile(
             $this->resolveDefinitions(['id' => new ClassDefinition(NoArgument::class, true, true)])
         );
-        $this->assertSame($expected, $actual);
+        $this->assertSameStrings($expected, $actual);
     }
 
     public function testDefinitionNotSharedAndLazy()
@@ -178,7 +181,7 @@ PHP;
         $actual = $compiler->compile(
             $this->resolveDefinitions(['id' => new ClassDefinition(NoArgument::class, false, true)])
         );
-        $this->assertSame($expected, $actual);
+        $this->assertSameStrings($expected, $actual);
     }
 
     public function testDefinitionTypeNotSupported()
@@ -208,7 +211,7 @@ PHP;
 
         $compiler = new Compiler(['namespace' => 'CustomNamespace']);
         $actual = $compiler->compile([]);
-        $this->assertSame($expected, $actual);
+        $this->assertSameStrings($expected, $actual);
     }
 
     public function testInvalidNamespace()
@@ -237,7 +240,7 @@ PHP;
 
         $compiler = new Compiler(['class' => 'CustomClass']);
         $actual = $compiler->compile([]);
-        $this->assertSame($expected, $actual);
+        $this->assertSameStrings($expected, $actual);
     }
 
     public function testInvalidClass()
@@ -322,7 +325,7 @@ PHP;
         $definition = $this->createMock(DefinitionInterface::class);
         $definition->method('isShared')->willReturn(true);
         $actual = $compiler->compile(['id' => $definition]);
-        $this->assertSame($expected, $actual);
+        $this->assertSameStrings($expected, $actual);
     }
 
     public function testInvalidDefinitionCompilersWithNotGoodType()
@@ -352,8 +355,8 @@ class CompiledContainer extends AbstractCompiledContainer
 PHP;
 
         $compiler = new Compiler();
-        $this->assertSame($expected, $compiler->compile([]));
-        $this->assertSame($expected, $compiler->compile([]));
+        $this->assertSameStrings($expected, $compiler->compile([]));
+        $this->assertSameStrings($expected, $compiler->compile([]));
     }
 
     public function testTwoGettersWithSameDefinition()
@@ -390,7 +393,7 @@ PHP;
             'id1' => new ValueDefinition('value1'),
             'id2' => new ValueDefinition('value2')
         ];
-        $this->assertSame($expected, $compiler->compile($definitions));
+        $this->assertSameStrings($expected, $compiler->compile($definitions));
     }
 
     public function testGetDefinition()

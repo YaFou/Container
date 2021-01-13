@@ -46,7 +46,7 @@ class Writer implements WriterInterface
 
     public function newLine(int $count = 1): WriterInterface
     {
-        return $this->writeRaw(str_repeat("\n", $count));
+        return $this->writeRaw(str_repeat(PHP_EOL, $count));
     }
 
     public function outdent(int $newLine = 1): WriterInterface

@@ -97,7 +97,7 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
             }
 
             try {
-                if (null !== $class = $parameter->getClass()) {
+                if (null !== $class = $parameter->getType()) {
                     $argument = new ArgumentDefinition($class->getName(), true);
                     $argument->resolve($container);
                     $arguments[] = $argument;
