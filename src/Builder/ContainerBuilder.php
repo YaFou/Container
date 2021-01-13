@@ -3,12 +3,12 @@
 namespace YaFou\Container\Builder;
 
 use YaFou\Container\Builder\Definition\AliasDefinitionBuilder;
-use YaFou\Container\Builder\Definition\BindingAwareInterface;
 use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 use YaFou\Container\Builder\Definition\CustomDefinitionBuilder;
 use YaFou\Container\Builder\Definition\DefinitionBuilderInterface;
 use YaFou\Container\Builder\Definition\FactoryDefinitionBuilder;
 use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Processor\AutoBindingContainerProcessor;
 use YaFou\Container\Builder\Processor\AutoTagContainerProcessor;
 use YaFou\Container\Builder\Processor\ContainerProcessorInterface;
 use YaFou\Container\Builder\Processor\GlobalArgumentsContainerProcessor;
@@ -16,7 +16,6 @@ use YaFou\Container\Builder\Processor\TagArgumentContainerProcessor;
 use YaFou\Container\Compilation\Compiler;
 use YaFou\Container\Compilation\CompilerInterface;
 use YaFou\Container\Container;
-use YaFou\Container\Definition\AliasDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Proxy\ProxyManager;
@@ -81,6 +80,10 @@ class ContainerBuilder
             $this->addProcessor(new AutoTagContainerProcessor($this->autoTags), -50);
         }
 
+        if ($this->autoBinding) {
+            $this->addProcessor(new AutoBindingContainerProcessor(), -50);
+        }
+
         foreach ($this->processors as $processors) {
             foreach ($processors as $processor) {
                 $processor->process($this);
@@ -108,26 +111,12 @@ class ContainerBuilder
 
     private function buildDefinitions(): array
     {
-        $bindings = [];
-        $definitions = [];
-
-        foreach ($this->definitions as $id => $definitionBuilder) {
-            $definitions[$id] = $definitionBuilder->build();
-
-            if ($this->autoBinding && $definitionBuilder instanceof BindingAwareInterface) {
-                foreach ($definitionBuilder->getBindings() as $binding) {
-                    $bindings[$binding][] = $id;
-                }
-            }
-        }
-
-        foreach ($bindings as $id => $binding) {
-            if (1 === count($binding) && !isset($definitions[$id])) {
-                $definitions[$id] = new AliasDefinition($binding[0]);
-            }
-        }
-
-        return $definitions;
+        return array_map(
+            function (DefinitionBuilderInterface $builder) {
+                return $builder->build();
+            },
+            $this->definitions
+        );
     }
 
     private function compile(Container $container, array $options): Container

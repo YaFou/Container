@@ -56,4 +56,14 @@ class AutoTagContainerProcessorTest extends TestCase
 
         $this->assertSame(['parameter' => 'value'], $definition->getTag('tag'));
     }
+
+    public function testNotProcessNonClassDefinitions()
+    {
+        $builder = new ContainerBuilder();
+        $definition = $builder->value('id', 'value');
+
+        $processor = new AutoTagContainerProcessor(['id' => ['tag']]);
+        $processor->process($builder);
+        $this->assertFalse($definition->hasTag('tag'));
+    }
 }

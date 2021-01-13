@@ -3,6 +3,7 @@
 namespace YaFou\Container\Builder\Processor;
 
 use YaFou\Container\Builder\ContainerBuilder;
+use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 
 class AutoTagContainerProcessor implements ContainerProcessorInterface
 {
@@ -19,6 +20,10 @@ class AutoTagContainerProcessor implements ContainerProcessorInterface
     public function process(ContainerBuilder $builder): void
     {
         foreach ($builder->getDefinitions() as $definition) {
+            if (!$definition instanceof ClassDefinitionBuilder) {
+                continue;
+            }
+
             foreach ($this->mapping as $class => $tags) {
                 foreach ($tags as $tagName => $tagParameters) {
                     if (is_string($tagParameters)) {
