@@ -7,4 +7,5 @@
     <file>tests/</file>
     <arg name="colors"/>
     <rule ref="PSR12"/>
+    <config name="ignore_warnings_on_exit" value="1"/>
 </ruleset>

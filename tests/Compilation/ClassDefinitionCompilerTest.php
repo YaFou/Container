@@ -156,7 +156,10 @@ class ClassDefinitionCompilerTest extends TestCase
     public function testArrayArguments()
     {
         $definition = new ClassDefinition(
-            ArrayArgument::class, true, false, [['@id1', '@id2', 'value']]
+            ArrayArgument::class,
+            true,
+            false,
+            [['@id1', '@id2', 'value']]
         );
         $writer = new Writer();
 
