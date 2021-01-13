@@ -8,6 +8,8 @@ use YaFou\Container\Builder\Definition\AliasDefinitionBuilder;
 use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 use YaFou\Container\Builder\Definition\FactoryDefinitionBuilder;
 use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Loader\LoaderInterface;
+use YaFou\Container\Builder\Loader\NamespaceLoader;
 use YaFou\Container\Builder\Processor\ContainerProcessorInterface;
 use YaFou\Container\Compilation\CompilerInterface;
 use YaFou\Container\Container;
@@ -19,12 +21,13 @@ use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Proxy\ProxyManager;
 use YaFou\Container\Proxy\ProxyManagerInterface;
+use YaFou\Container\Tests\Fixtures\AllTypesArgument;
 use YaFou\Container\Tests\Fixtures\Builder\NoParentNoInterface;
 use YaFou\Container\Tests\Fixtures\Builder\OneParentNoInterface;
-use YaFou\Container\Tests\Fixtures\NoArgument;
 use YaFou\Container\Tests\Fixtures\ClassArgument;
-use YaFou\Container\Tests\Fixtures\AllTypesArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
 use YaFou\Container\Tests\Fixtures\TwoAllTypesArguments;
+use YaFou\Container\Tests\Fixtures\Builder\Loader\NamespaceLoader\TwoClasses;
 
 class ContainerBuilderTest extends TestCase
 {
@@ -595,5 +598,53 @@ PHP;
         $definition = $builder->class(NoArgument::class);
         $builder->build();
         $this->assertFalse($definition->hasTag('tag'));
+    }
+
+    public function testAddLoaders()
+    {
+        $loader1 = $this->createMock(LoaderInterface::class);
+        $loader1->method('load')->willReturnCallback(function (ContainerBuilder $builder) {
+            $builder->value('id1', 'value1');
+        });
+
+        $loader2 = $this->createMock(LoaderInterface::class);
+        $loader2->method('load')->willReturnCallback(function (ContainerBuilder $builder) {
+            $builder->value('id2', 'value2');
+        });
+
+        $container = new Container(
+            [
+                'id1' => new ValueDefinition('value1'),
+                'id2' => new ValueDefinition('value2')
+            ]
+        );
+
+        $builder = (new ContainerBuilder())->addLoaders($loader1, $loader2);
+        $this->assertEquals($container, $builder->build());
+    }
+
+    public function testNamespace()
+    {
+        $builder = new ContainerBuilder();
+
+        $actualLoader = $builder->namespace(
+            'YaFou\Container\Tests\Fixtures\Builder\Loader\NamespaceLoader\TwoClasses',
+            dirname(__DIR__) . '/Fixtures/Builder/Loader/NamespaceLoader/TwoClasses'
+        );
+
+        $expectedLoader = new NamespaceLoader(
+            'YaFou\Container\Tests\Fixtures\Builder\Loader\NamespaceLoader\TwoClasses',
+            dirname(__DIR__) . '/Fixtures/Builder/Loader/NamespaceLoader/TwoClasses'
+        );
+
+        $this->assertEquals($expectedLoader, $actualLoader);
+
+        $container = new Container(
+            [
+                TwoClasses\Class1::class => new ClassDefinition(TwoClasses\Class1::class),
+                TwoClasses\Class2::class => new ClassDefinition(TwoClasses\Class2::class)
+            ]
+        );
+        $this->assertEquals($container, $builder->build());
     }
 }

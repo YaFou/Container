@@ -8,6 +8,8 @@ use YaFou\Container\Builder\Definition\CustomDefinitionBuilder;
 use YaFou\Container\Builder\Definition\DefinitionBuilderInterface;
 use YaFou\Container\Builder\Definition\FactoryDefinitionBuilder;
 use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
+use YaFou\Container\Builder\Loader\LoaderInterface;
+use YaFou\Container\Builder\Loader\NamespaceLoader;
 use YaFou\Container\Builder\Processor\AutoBindingContainerProcessor;
 use YaFou\Container\Builder\Processor\AutoTagContainerProcessor;
 use YaFou\Container\Builder\Processor\ContainerProcessorInterface;
@@ -42,6 +44,7 @@ class ContainerBuilder
      * @var false
      */
     private $autoTag = true;
+    private $loaders = [];
 
     public function build(): Container
     {
@@ -55,6 +58,10 @@ class ContainerBuilder
             $class = $this->compiler->getCompiledContainerClass();
 
             return new $class($options);
+        }
+
+        foreach ($this->loaders as $loader) {
+            $loader->load($this);
         }
 
         $this->processDefinitions();
@@ -311,6 +318,21 @@ class ContainerBuilder
     public function disableAutoTag(): self
     {
         $this->autoTag = false;
+
+        return $this;
+    }
+
+    public function namespace(string $namespace, string $directory): NamespaceLoader
+    {
+        $loader = new NamespaceLoader($namespace, $directory);
+        $this->addLoaders($loader);
+
+        return $loader;
+    }
+
+    public function addLoaders(LoaderInterface ...$loaders): self
+    {
+        $this->loaders = array_merge($this->loaders, $loaders);
 
         return $this;
     }
