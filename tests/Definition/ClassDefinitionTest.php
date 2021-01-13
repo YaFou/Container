@@ -17,6 +17,8 @@ use YaFou\Container\Tests\Fixtures\DefaultClassArgument;
 use YaFou\Container\Tests\Fixtures\DefaultInterfaceArgument;
 use YaFou\Container\Tests\Fixtures\AllTypesArgument;
 use YaFou\Container\Tests\Fixtures\StringArgument;
+use YaFou\Container\Tests\Fixtures\UnionAllTypesAndClassArgument;
+use YaFou\Container\Tests\Fixtures\UnionClassArgument;
 use YaFou\Container\Tests\Fixtures\UnknownClassArgument;
 use YaFou\Container\Tests\Fixtures\ExtendedNoArgument;
 use YaFou\Container\Tests\Fixtures\FinalClass;
@@ -183,5 +185,23 @@ class ClassDefinitionTest extends TestCase
     {
         $definition = new ClassDefinition(DefaultInterfaceArgument::class);
         $this->assertNull($definition->get(new Container([]))->interface);
+    }
+
+    /**
+     * @requires PHP 8
+     */
+    public function testSupportUnionType()
+    {
+        $definition = new ClassDefinition(UnionClassArgument::class);
+        $this->assertInstanceOf(NoArgument::class, $definition->get(new Container([]))->value);
+    }
+
+    /**
+     * @requires PHP 8
+     */
+    public function testChooseResolvedUnionType()
+    {
+        $definition = new ClassDefinition(UnionAllTypesAndClassArgument::class);
+        $this->assertInstanceOf(NoArgument::class, $definition->get(new Container([]))->value);
     }
 }

@@ -4,6 +4,7 @@ namespace YaFou\Container\Definition;
 
 use YaFou\Container\Container;
 use YaFou\Container\Exception\InvalidArgumentException;
+use YaFou\Container\Exception\LogicException;
 use YaFou\Container\Exception\UnknownArgumentException;
 
 class ClassDefinition implements DefinitionInterface, ProxyableInterface
@@ -97,10 +98,8 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
             }
 
             try {
-                if (null !== $class = $parameter->getType()) {
-                    $argument = new ArgumentDefinition($class->getName(), true);
-                    $argument->resolve($container);
-                    $arguments[] = $argument;
+                if (null !== $type = $parameter->getType()) {
+                    $arguments[] = $this->getArgument($type, $container);
 
                     continue;
                 }
@@ -144,5 +143,30 @@ class ClassDefinition implements DefinitionInterface, ProxyableInterface
     public function getProxyClass(): string
     {
         return $this->class;
+    }
+
+    public function getArgument(\ReflectionType $type, Container $container): ArgumentDefinition
+    {
+        if ($type instanceof \ReflectionNamedType) {
+            $argument = new ArgumentDefinition($type->getName(), true);
+            $argument->resolve($container);
+
+            return $argument;
+        }
+
+        if ($type instanceof \ReflectionUnionType) {
+            foreach ($type->getTypes() as $type) {
+                $argument = new ArgumentDefinition($type->getName(), true);
+
+                try {
+                    $argument->resolve($container);
+
+                    return $argument;
+                } catch (UnknownArgumentException $e) {
+                }
+            }
+        }
+
+        throw new LogicException(sprintf('The type of the argument "%s" is unknown', get_class($type)));
     }
 }
