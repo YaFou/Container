@@ -7,17 +7,17 @@ use YaFou\Container\Builder\ContainerBuilder;
 use YaFou\Container\Builder\Definition\ClassDefinitionBuilder;
 use YaFou\Container\Builder\Definition\ValueDefinitionBuilder;
 use YaFou\Container\Builder\Processor\TagArgumentContainerProcessor;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
 
 class TagArgumentContainerProcessorTest extends TestCase
 {
     public function testReplaceArgument()
     {
         $builder = new ContainerBuilder();
-        $builder->class('id1', ConstructorWithNoArgument::class)->arguments(['*tag', 'value']);
-        $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->class('id1', NoArgument::class)->arguments(['*tag', 'value']);
+        $builder->class('id2', NoArgument::class)->tag('tag');
         $builder->value('id3', 'value')->tag('tag');
-        $builder->class('id4', ConstructorWithNoArgument::class);
+        $builder->class('id4', NoArgument::class);
 
         $processor = new TagArgumentContainerProcessor();
         $processor->process($builder);
@@ -30,8 +30,8 @@ class TagArgumentContainerProcessorTest extends TestCase
     public function testEscapeArgument()
     {
         $builder = new ContainerBuilder();
-        $builder->class('id1', ConstructorWithNoArgument::class)->arguments(['**tag']);
-        $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->class('id1', NoArgument::class)->arguments(['**tag']);
+        $builder->class('id2', NoArgument::class)->tag('tag');
 
         $processor = new TagArgumentContainerProcessor();
         $processor->process($builder);
@@ -42,10 +42,10 @@ class TagArgumentContainerProcessorTest extends TestCase
     public function testReplaceByPriority()
     {
         $builder = new ContainerBuilder();
-        $builder->class('id1', ConstructorWithNoArgument::class)->arguments(['*tag']);
-        $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->class('id1', NoArgument::class)->arguments(['*tag']);
+        $builder->class('id2', NoArgument::class)->tag('tag');
         $builder->value('id3', 'value')->tag('tag')->tag('tag');
-        $builder->class('id4', ConstructorWithNoArgument::class)->tag('tag', ['priority' => 10]);
+        $builder->class('id4', NoArgument::class)->tag('tag', ['priority' => 10]);
 
         $processor = new TagArgumentContainerProcessor();
         $processor->process($builder);
@@ -56,7 +56,7 @@ class TagArgumentContainerProcessorTest extends TestCase
     public function testNotReplaceNonStringArgument()
     {
         $builder = new ContainerBuilder();
-        $builder->class('id', ConstructorWithNoArgument::class)->argument(0, null);
+        $builder->class('id', NoArgument::class)->argument(0, null);
         $processor = new TagArgumentContainerProcessor();
         $processor->process($builder);
         $this->assertNull($builder->getDefinition('id')->getArguments()[0]);

@@ -7,7 +7,7 @@ use YaFou\Container\Container;
 use YaFou\Container\Definition\FactoryDefinition;
 use YaFou\Container\Exception\InvalidArgumentException;
 use YaFou\Container\Tests\Fixtures\AbstractClass;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
 use YaFou\Container\Tests\Fixtures\FinalClass;
 use YaFou\Container\Tests\Fixtures\PrivateConstructor;
 
@@ -79,7 +79,7 @@ class FactoryDefinitionTest extends TestCase
         $definition = new FactoryDefinition(
             $this->makeCallable(new Container([])),
             true,
-            ConstructorWithNoArgument::class,
+            NoArgument::class,
             true
         );
         $this->assertTrue($definition->isLazy());
@@ -96,10 +96,10 @@ class FactoryDefinitionTest extends TestCase
         $definition = new FactoryDefinition(
             $this->makeCallable(new Container([])),
             true,
-            ConstructorWithNoArgument::class,
+            NoArgument::class,
             true
         );
-        $this->assertSame(ConstructorWithNoArgument::class, $definition->getProxyClass());
+        $this->assertSame(NoArgument::class, $definition->getProxyClass());
     }
 
     public function testGetProxyClassWithNoClass()

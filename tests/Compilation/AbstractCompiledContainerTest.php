@@ -5,22 +5,22 @@ namespace YaFou\Container\Tests\Compilation;
 use PHPUnit\Framework\TestCase;
 use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Tests\Fixtures\Compilation\CompiledContainer;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
 
 class AbstractCompiledContainerTest extends TestCase
 {
     public function testContainerDefaultLocked()
     {
         $this->expectException(NotFoundException::class);
-        $this->expectExceptionMessage('The id "' . ConstructorWithNoArgument::class . '" was not found');
+        $this->expectExceptionMessage('The id "' . NoArgument::class . '" was not found');
         $container = new CompiledContainer();
-        $container->get(ConstructorWithNoArgument::class);
+        $container->get(NoArgument::class);
     }
 
     public function testCustomOption()
     {
         $container = new CompiledContainer(['locked' => false]);
-        $this->assertInstanceOf(ConstructorWithNoArgument::class, $container->get(ConstructorWithNoArgument::class));
+        $this->assertInstanceOf(NoArgument::class, $container->get(NoArgument::class));
     }
 
     public function testHasFromMappings()

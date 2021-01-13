@@ -2,7 +2,7 @@
 
 namespace YaFou\Container\Tests\Fixtures;
 
-class ConstructorWithNoArgument
+class NoArgument
 {
 
 }

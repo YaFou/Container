@@ -14,7 +14,7 @@ use YaFou\Container\Tests\Fixtures\Builder\NoParentTwoInterfaces;
 use YaFou\Container\Tests\Fixtures\Builder\OneParentInterface;
 use YaFou\Container\Tests\Fixtures\Builder\OneParentNoInterface;
 use YaFou\Container\Tests\Fixtures\Builder\TwoParentsNoInterface;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
 
 class FactoryDefinitionBuilderTest extends AbstractDefinitionBuilderTest
 {
@@ -71,14 +71,14 @@ class FactoryDefinitionBuilderTest extends AbstractDefinitionBuilderTest
         $builder = (new FactoryDefinitionBuilder(
             function () {
             }
-        ))->lazy(ConstructorWithNoArgument::class);
+        ))->lazy(NoArgument::class);
 
         $this->assertEquals(
             new FactoryDefinition(
                 function () {
                 },
                 true,
-                ConstructorWithNoArgument::class,
+                NoArgument::class,
                 true
             ),
             $builder->build()
@@ -90,14 +90,14 @@ class FactoryDefinitionBuilderTest extends AbstractDefinitionBuilderTest
         $builder = (new FactoryDefinitionBuilder(
             function () {
             }
-        ))->lazy(ConstructorWithNoArgument::class)->notLazy();
+        ))->lazy(NoArgument::class)->notLazy();
 
         $this->assertEquals(
             new FactoryDefinition(
                 function () {
                 },
                 true,
-                ConstructorWithNoArgument::class
+                NoArgument::class
             ),
             $builder->build()
         );
@@ -108,14 +108,14 @@ class FactoryDefinitionBuilderTest extends AbstractDefinitionBuilderTest
         $builder = (new FactoryDefinitionBuilder(
             function () {
             }
-        ))->class(ConstructorWithNoArgument::class);
+        ))->class(NoArgument::class);
 
         $this->assertEquals(
             new FactoryDefinition(
                 function () {
                 },
                 true,
-                ConstructorWithNoArgument::class
+                NoArgument::class
             ),
             $builder->build()
         );

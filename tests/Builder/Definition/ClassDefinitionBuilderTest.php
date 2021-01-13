@@ -15,55 +15,55 @@ use YaFou\Container\Tests\Fixtures\Builder\NoParentTwoInterfaces;
 use YaFou\Container\Tests\Fixtures\Builder\OneParentInterface;
 use YaFou\Container\Tests\Fixtures\Builder\OneParentNoInterface;
 use YaFou\Container\Tests\Fixtures\Builder\TwoParentsNoInterface;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
 
 class ClassDefinitionBuilderTest extends AbstractDefinitionBuilderTest
 {
     public function testBuild()
     {
-        $builder = new ClassDefinitionBuilder(ConstructorWithNoArgument::class);
-        $this->assertEquals(new ClassDefinition(ConstructorWithNoArgument::class), $builder->build());
+        $builder = new ClassDefinitionBuilder(NoArgument::class);
+        $this->assertEquals(new ClassDefinition(NoArgument::class), $builder->build());
     }
 
     public function testBuildWithNotShared()
     {
-        $builder = (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->notShared();
-        $this->assertEquals(new ClassDefinition(ConstructorWithNoArgument::class, false), $builder->build());
+        $builder = (new ClassDefinitionBuilder(NoArgument::class))->notShared();
+        $this->assertEquals(new ClassDefinition(NoArgument::class, false), $builder->build());
     }
 
     public function testBuildWithShared()
     {
-        $builder = (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->notShared()->shared();
-        $this->assertEquals(new ClassDefinition(ConstructorWithNoArgument::class), $builder->build());
+        $builder = (new ClassDefinitionBuilder(NoArgument::class))->notShared()->shared();
+        $this->assertEquals(new ClassDefinition(NoArgument::class), $builder->build());
     }
 
     public function testBuildWithLazy()
     {
-        $builder = (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->lazy();
-        $this->assertEquals(new ClassDefinition(ConstructorWithNoArgument::class, true, true), $builder->build());
+        $builder = (new ClassDefinitionBuilder(NoArgument::class))->lazy();
+        $this->assertEquals(new ClassDefinition(NoArgument::class, true, true), $builder->build());
     }
 
     public function testBuildWithNotLazy()
     {
-        $builder = (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->lazy()->notLazy();
-        $this->assertEquals(new ClassDefinition(ConstructorWithNoArgument::class), $builder->build());
+        $builder = (new ClassDefinitionBuilder(NoArgument::class))->lazy()->notLazy();
+        $this->assertEquals(new ClassDefinition(NoArgument::class), $builder->build());
     }
 
     public function testArguments()
     {
-        $builder = (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->arguments([0 => 'value']);
-        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true, false, [0 => 'value']);
+        $builder = (new ClassDefinitionBuilder(NoArgument::class))->arguments([0 => 'value']);
+        $definition = new ClassDefinition(NoArgument::class, true, false, [0 => 'value']);
         $this->assertEquals($definition, $builder->build());
     }
 
     public function testArgument()
     {
-        $builder = (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))
+        $builder = (new ClassDefinitionBuilder(NoArgument::class))
             ->arguments([0 => 'value1', 1 => 'value2'])
             ->argument(0, 'value3');
 
         $definition = new ClassDefinition(
-            ConstructorWithNoArgument::class,
+            NoArgument::class,
             true,
             false,
             [0 => 'value3', 1 => 'value2']
@@ -75,7 +75,7 @@ class ClassDefinitionBuilderTest extends AbstractDefinitionBuilderTest
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The key must be a integer or a string');
-        (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))->argument(false, null);
+        (new ClassDefinitionBuilder(NoArgument::class))->argument(false, null);
     }
 
     /**
@@ -110,12 +110,12 @@ class ClassDefinitionBuilderTest extends AbstractDefinitionBuilderTest
 
     protected function makeDefinition(): AbstractDefinitionBuilder
     {
-        return new ClassDefinitionBuilder(ConstructorWithNoArgument::class);
+        return new ClassDefinitionBuilder(NoArgument::class);
     }
 
     public function testGetArguments()
     {
-        $builder = (new ClassDefinitionBuilder(ConstructorWithNoArgument::class))
+        $builder = (new ClassDefinitionBuilder(NoArgument::class))
             ->arguments(['argument1', 'argument2']);
         $this->assertSame([0 => 'argument1', 1 => 'argument2'], $builder->getArguments());
     }

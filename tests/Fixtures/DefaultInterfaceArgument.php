@@ -2,7 +2,7 @@
 
 namespace YaFou\Container\Tests\Fixtures;
 
-class ConstructorWithOneDefaultInterfaceArgument
+class DefaultInterfaceArgument
 {
     /**
      * @var SimpleInterface|null

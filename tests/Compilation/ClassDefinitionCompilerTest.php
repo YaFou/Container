@@ -9,11 +9,11 @@ use YaFou\Container\Container;
 use YaFou\Container\Definition\ClassDefinition;
 use YaFou\Container\Definition\DefinitionInterface;
 use YaFou\Container\Definition\ValueDefinition;
-use YaFou\Container\Tests\Fixtures\ConstructorWithArrayArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneDefaultArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithTwoArguments;
+use YaFou\Container\Tests\Fixtures\ArrayArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
+use YaFou\Container\Tests\Fixtures\ClassArgument;
+use YaFou\Container\Tests\Fixtures\DefaultArgument;
+use YaFou\Container\Tests\Fixtures\TwoClassArguments;
 use YaFou\Container\Writer\Writer;
 
 class ClassDefinitionCompilerTest extends TestCase
@@ -22,41 +22,41 @@ class ClassDefinitionCompilerTest extends TestCase
     {
         $definitionCompiler = new ClassDefinitionCompiler();
         $this->assertFalse($definitionCompiler->supports($this->createMock(DefinitionInterface::class)));
-        $this->assertTrue($definitionCompiler->supports(new ClassDefinition(ConstructorWithNoArgument::class)));
+        $this->assertTrue($definitionCompiler->supports(new ClassDefinition(NoArgument::class)));
     }
 
     public function testConstructorWithNoArgument()
     {
         $definitionCompiler = new ClassDefinitionCompiler();
         $writer = new Writer();
-        $definition = new ClassDefinition(ConstructorWithNoArgument::class);
+        $definition = new ClassDefinition(NoArgument::class);
         $definition->resolve(new Container([]));
         $definitionCompiler->compile($definition, new Compiler(), $writer);
-        $this->assertSame('new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument()', $writer->getCode());
+        $this->assertSame('new \YaFou\Container\Tests\Fixtures\NoArgument()', $writer->getCode());
     }
 
     public function testConstructorWithOneDynamicArgument()
     {
-        $definition = new ClassDefinition(ConstructorWithOneArgument::class);
+        $definition = new ClassDefinition(ClassArgument::class);
         $container = new Container(['id' => $definition]);
         $container->resolveDefinition('id');
 
         $compiler = $this->getMockBuilder(Compiler::class)
             ->onlyMethods(['getMappingFromId', 'getDefinition', 'hasDefinition'])
             ->getMock();
-        $compiler->method('getMappingFromId')->with(ConstructorWithNoArgument::class)->willReturn(0);
+        $compiler->method('getMappingFromId')->with(NoArgument::class)->willReturn(0);
         $compiler->method('getDefinition')
-            ->with(ConstructorWithNoArgument::class)
-            ->willReturn(new ClassDefinition(ConstructorWithNoArgument::class));
-        $compiler->method('hasDefinition')->with(ConstructorWithNoArgument::class)->willReturn(true);
+            ->with(NoArgument::class)
+            ->willReturn(new ClassDefinition(NoArgument::class));
+        $compiler->method('hasDefinition')->with(NoArgument::class)->willReturn(true);
 
         $writer = new Writer();
 
         $definitionCompiler = new ClassDefinitionCompiler();
         $definitionCompiler->compile($definition, $compiler, $writer);
         $this->assertSame(
-            'new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument(' .
-            '$this->resolvedDefinitions[\'YaFou\\\\Container\\\\Tests\\\\Fixtures\\\\ConstructorWithNoArgument\'] ?? ' .
+            'new \YaFou\Container\Tests\Fixtures\ClassArgument(' .
+            '$this->resolvedDefinitions[\'YaFou\\\\Container\\\\Tests\\\\Fixtures\\\\NoArgument\'] ?? ' .
             '$this->get0())',
             $writer->getCode()
         );
@@ -64,7 +64,7 @@ class ClassDefinitionCompilerTest extends TestCase
 
     public function testConstructorWithTwoDynamicArguments()
     {
-        $definition = new ClassDefinition(ConstructorWithTwoArguments::class);
+        $definition = new ClassDefinition(TwoClassArguments::class);
         $container = new Container(['id' => $definition]);
         $container->resolveDefinition('id');
 
@@ -75,16 +75,16 @@ class ClassDefinitionCompilerTest extends TestCase
         $compiler->method('getMappingFromId')
             ->willReturnMap(
                 [
-                    [ConstructorWithNoArgument::class, 0],
-                    [ConstructorWithOneArgument::class, 1]
+                    [NoArgument::class, 0],
+                    [ClassArgument::class, 1]
                 ]
             );
 
         $compiler->method('getDefinition')
             ->willReturnMap(
                 [
-                    [ConstructorWithNoArgument::class, new ClassDefinition(ConstructorWithNoArgument::class)],
-                    [ConstructorWithOneArgument::class, new ClassDefinition(ConstructorWithOneArgument::class)]
+                    [NoArgument::class, new ClassDefinition(NoArgument::class)],
+                    [ClassArgument::class, new ClassDefinition(ClassArgument::class)]
                 ]
             );
         $compiler->method('hasDefinition')->willReturn(true);
@@ -94,10 +94,10 @@ class ClassDefinitionCompilerTest extends TestCase
         $definitionCompiler = new ClassDefinitionCompiler();
         $definitionCompiler->compile($definition, $compiler, $writer);
         $this->assertSame(
-            'new \YaFou\Container\Tests\Fixtures\ConstructorWithTwoArguments(' .
-            '$this->resolvedDefinitions[\'YaFou\\\\Container\\\\Tests\\\\Fixtures\\\\ConstructorWithNoArgument\'] ?? ' .
+            'new \YaFou\Container\Tests\Fixtures\TwoClassArguments(' .
+            '$this->resolvedDefinitions[\'YaFou\\\\Container\\\\Tests\\\\Fixtures\\\\NoArgument\'] ?? ' .
             '$this->get0(), ' .
-            '$this->resolvedDefinitions[\'YaFou\\\\Container\\\\Tests\\\\Fixtures\\\\ConstructorWithOneArgument\'] ??' .
+            '$this->resolvedDefinitions[\'YaFou\\\\Container\\\\Tests\\\\Fixtures\\\\ClassArgument\'] ??' .
             ' $this->get1())',
             $writer->getCode()
         );
@@ -107,23 +107,23 @@ class ClassDefinitionCompilerTest extends TestCase
     {
         $definitionCompiler = new ClassDefinitionCompiler();
         $writer = new Writer();
-        $definition = new ClassDefinition(ConstructorWithOneArgument::class, true, false, [0 => 'value']);
+        $definition = new ClassDefinition(ClassArgument::class, true, false, [0 => 'value']);
         $definition->resolve(new Container([]));
         $definitionCompiler->compile($definition, new Compiler(), $writer);
         $this->assertSame(
-            'new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument(\'value\')',
+            'new \YaFou\Container\Tests\Fixtures\ClassArgument(\'value\')',
             $writer->getCode()
         );
     }
 
     public function testConstructorWithOneDynamicNonSharedArgument()
     {
-        $definition = new ClassDefinition(ConstructorWithOneArgument::class);
+        $definition = new ClassDefinition(ClassArgument::class);
         $container = new Container(
             $definitions = [
                 'id' => $definition,
-                ConstructorWithNoArgument::class => $dependencyDefinition = new ClassDefinition(
-                    ConstructorWithNoArgument::class,
+                NoArgument::class => $dependencyDefinition = new ClassDefinition(
+                    NoArgument::class,
                     false
                 )
             ]
@@ -136,9 +136,9 @@ class ClassDefinitionCompilerTest extends TestCase
             ->onlyMethods(['getDefinition', 'hasDefinition', 'generateGetter'])
             ->getMock();
         $compiler->method('getDefinition')
-            ->with(ConstructorWithNoArgument::class)
+            ->with(NoArgument::class)
             ->willReturn($dependencyDefinition);
-        $compiler->method('hasDefinition')->with(ConstructorWithNoArgument::class)->willReturn(true);
+        $compiler->method('hasDefinition')->with(NoArgument::class)->willReturn(true);
         $compiler->method('generateGetter')->with($dependencyDefinition)->willReturnCallback(
             function () use ($writer) {
                 $writer->writeRaw('getter');
@@ -148,7 +148,7 @@ class ClassDefinitionCompilerTest extends TestCase
         $definitionCompiler = new ClassDefinitionCompiler();
         $definitionCompiler->compile($definition, $compiler, $writer);
         $this->assertSame(
-            'new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument(getter)',
+            'new \YaFou\Container\Tests\Fixtures\ClassArgument(getter)',
             $writer->getCode()
         );
     }
@@ -156,7 +156,7 @@ class ClassDefinitionCompilerTest extends TestCase
     public function testArrayArguments()
     {
         $definition = new ClassDefinition(
-            ConstructorWithArrayArgument::class, true, false, [['@id1', '@id2', 'value']]
+            ArrayArgument::class, true, false, [['@id1', '@id2', 'value']]
         );
         $writer = new Writer();
 
@@ -189,7 +189,7 @@ class ClassDefinitionCompilerTest extends TestCase
         $definitionCompiler->compile($definition, $compiler, $writer);
 
         $code = <<<'PHP'
-new \YaFou\Container\Tests\Fixtures\ConstructorWithArrayArgument([
+new \YaFou\Container\Tests\Fixtures\ArrayArgument([
     $this->resolvedDefinitions['id1'] ?? $this->get0(),
     $this->resolvedDefinitions['id2'] ?? $this->get1(),
     'value'
@@ -209,25 +209,25 @@ PHP;
         $compiler->method('hasDefinition')->willReturn(false);
 
         $definition = new ClassDefinition(
-            ConstructorWithOneArgument::class,
+            ClassArgument::class,
             true,
             false,
             ['@Psr\Container\ContainerInterface']
         );
         $definition->resolve(new Container([]));
         $definitionCompiler->compile($definition, $compiler, $writer);
-        $this->assertSame('new \YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument($this)', $writer->getCode());
+        $this->assertSame('new \YaFou\Container\Tests\Fixtures\ClassArgument($this)', $writer->getCode());
     }
 
     public function testConstructorWithDefaultValue()
     {
         $definitionCompiler = new ClassDefinitionCompiler();
         $writer = new Writer();
-        $definition = new ClassDefinition(ConstructorWithOneDefaultArgument::class);
+        $definition = new ClassDefinition(DefaultArgument::class);
         $definition->resolve(new Container([]));
         $definitionCompiler->compile($definition, new Compiler(), $writer);
         $this->assertSame(
-            'new \YaFou\Container\Tests\Fixtures\ConstructorWithOneDefaultArgument(\'default\')',
+            'new \YaFou\Container\Tests\Fixtures\DefaultArgument(\'default\')',
             $writer->getCode()
         );
     }

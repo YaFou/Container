@@ -2,7 +2,7 @@
 
 namespace YaFou\Container\Tests\Fixtures;
 
-class ConstructorWithOneDefaultClassArgument
+class DefaultClassArgument
 {
     /**
      * @var UnknownClass|null

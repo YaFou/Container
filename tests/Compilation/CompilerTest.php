@@ -12,7 +12,7 @@ use YaFou\Container\Definition\ValueDefinition;
 use YaFou\Container\Exception\CompilationException;
 use YaFou\Container\Exception\NotFoundException;
 use YaFou\Container\Exception\WrongOptionException;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
 use YaFou\Container\Writer\Writer;
 use YaFou\Container\Writer\WriterInterface;
 
@@ -57,7 +57,7 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return $this->resolvedDefinitions['id'] = new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+        return $this->resolvedDefinitions['id'] = new \YaFou\Container\Tests\Fixtures\NoArgument();
     }
 }
 
@@ -65,7 +65,7 @@ PHP;
 
         $compiler = new Compiler();
         $actual = $compiler->compile(
-            $this->resolveDefinitions(['id' => new ClassDefinition(ConstructorWithNoArgument::class)])
+            $this->resolveDefinitions(['id' => new ClassDefinition(NoArgument::class)])
         );
         $this->assertSame($expected, $actual);
     }
@@ -101,7 +101,7 @@ class CompiledContainer extends AbstractCompiledContainer
     protected function get0()
     {
         return ($this->resolvedFactories['id'] = function () {
-            return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+            return new \YaFou\Container\Tests\Fixtures\NoArgument();
         })();
     }
 }
@@ -110,7 +110,7 @@ PHP;
 
         $compiler = new Compiler();
         $actual = $compiler->compile(
-            $this->resolveDefinitions(['id' => new ClassDefinition(ConstructorWithNoArgument::class, false)])
+            $this->resolveDefinitions(['id' => new ClassDefinition(NoArgument::class, false)])
         );
         $this->assertSame($expected, $actual);
     }
@@ -132,8 +132,8 @@ class CompiledContainer extends AbstractCompiledContainer
 
     protected function get0()
     {
-        return $this->resolvedDefinitions['id'] = $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument', function () {
-            return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+        return $this->resolvedDefinitions['id'] = $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\NoArgument', function () {
+            return new \YaFou\Container\Tests\Fixtures\NoArgument();
         });
     }
 }
@@ -142,7 +142,7 @@ PHP;
 
         $compiler = new Compiler();
         $actual = $compiler->compile(
-            $this->resolveDefinitions(['id' => new ClassDefinition(ConstructorWithNoArgument::class, true, true)])
+            $this->resolveDefinitions(['id' => new ClassDefinition(NoArgument::class, true, true)])
         );
         $this->assertSame($expected, $actual);
     }
@@ -165,8 +165,8 @@ class CompiledContainer extends AbstractCompiledContainer
     protected function get0()
     {
         return ($this->resolvedFactories['id'] = function () {
-            return $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\ConstructorWithNoArgument', function () {
-                return new \YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument();
+            return $this->options['proxy_manager']->getProxy('YaFou\\Container\\Tests\\Fixtures\\NoArgument', function () {
+                return new \YaFou\Container\Tests\Fixtures\NoArgument();
             });
         })();
     }
@@ -176,7 +176,7 @@ PHP;
 
         $compiler = new Compiler();
         $actual = $compiler->compile(
-            $this->resolveDefinitions(['id' => new ClassDefinition(ConstructorWithNoArgument::class, false, true)])
+            $this->resolveDefinitions(['id' => new ClassDefinition(NoArgument::class, false, true)])
         );
         $this->assertSame($expected, $actual);
     }

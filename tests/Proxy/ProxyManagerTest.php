@@ -4,8 +4,8 @@ namespace YaFou\Container\Tests\Proxy;
 
 use PHPUnit\Framework\TestCase;
 use YaFou\Container\Proxy\ProxyManager;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
+use YaFou\Container\Tests\Fixtures\ClassArgument;
 use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicMethod;
 use YaFou\Container\Tests\Fixtures\Proxy\PublicMethodWithDefaultValueParameter;
@@ -112,7 +112,7 @@ class ProxyManagerTest extends TestCase
         $writer->expects($this->atLeastOnce())->method('newLine')->willReturnSelf();
         $manager = new ProxyManager(null, $writer);
         $manager->getProxy(
-            ConstructorWithNoArgument::class,
+            NoArgument::class,
             function () {
             }
         );
@@ -123,19 +123,19 @@ class ProxyManagerTest extends TestCase
         $manager = new ProxyManager();
 
         $proxy = $manager->getProxy(
-            ConstructorWithNoArgument::class,
+            NoArgument::class,
             function () {
             }
         );
 
-        $this->assertInstanceOf(ConstructorWithNoArgument::class, $proxy);
+        $this->assertInstanceOf(NoArgument::class, $proxy);
 
         $proxy = $manager->getProxy(
-            ConstructorWithOneArgument::class,
+            ClassArgument::class,
             function () {
             }
         );
 
-        $this->assertInstanceOf(ConstructorWithOneArgument::class, $proxy);
+        $this->assertInstanceOf(ClassArgument::class, $proxy);
     }
 }

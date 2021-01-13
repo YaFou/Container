@@ -2,7 +2,7 @@
 
 namespace YaFou\Container\Tests\Fixtures;
 
-class ConstructorWithTwoScalarArguments
+class TwoAllTypesArguments
 {
     public $parameter1;
     public $parameter2;

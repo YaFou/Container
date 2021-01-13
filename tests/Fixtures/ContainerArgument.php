@@ -4,7 +4,7 @@ namespace YaFou\Container\Tests\Fixtures;
 
 use Psr\Container\ContainerInterface;
 
-class ConstructorWithContainerArgument
+class ContainerArgument
 {
     public function __construct(ContainerInterface $container)
     {

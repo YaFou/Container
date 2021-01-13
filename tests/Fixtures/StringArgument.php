@@ -2,7 +2,7 @@
 
 namespace YaFou\Container\Tests\Fixtures;
 
-class ConstructorWithOneStringArgument
+class StringArgument
 {
     /**
      * @var string

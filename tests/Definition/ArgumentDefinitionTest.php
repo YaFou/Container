@@ -6,9 +6,9 @@ use PHPUnit\Framework\TestCase;
 use YaFou\Container\Container;
 use YaFou\Container\Definition\ArgumentDefinition;
 use YaFou\Container\Exception\UnknownArgumentException;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
+use YaFou\Container\Tests\Fixtures\ClassArgument;
+use YaFou\Container\Tests\Fixtures\AllTypesArgument;
 
 class ArgumentDefinitionTest extends TestCase
 {
@@ -20,50 +20,50 @@ class ArgumentDefinitionTest extends TestCase
 
     public function testGetId()
     {
-        $definition = new ArgumentDefinition('@' . ConstructorWithNoArgument::class);
-        $this->assertInstanceOf(ConstructorWithNoArgument::class, $definition->get(new Container([])));
+        $definition = new ArgumentDefinition('@' . NoArgument::class);
+        $this->assertInstanceOf(NoArgument::class, $definition->get(new Container([])));
     }
 
     public function testResolveId()
     {
-        $definition = new ArgumentDefinition('@' . ConstructorWithOneScalarArgument::class);
+        $definition = new ArgumentDefinition('@' . AllTypesArgument::class);
         $this->expectException(UnknownArgumentException::class);
         $this->expectExceptionMessage(
-            'Can\'t resolve parameter "scalar" of class "YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument"'
+            'Can\'t resolve parameter "scalar" of class "YaFou\Container\Tests\Fixtures\AllTypesArgument"'
         );
         $definition->resolve(new Container([]));
     }
 
     public function testEscapeId()
     {
-        $definition = new ArgumentDefinition('@@' . ConstructorWithNoArgument::class);
-        $this->assertSame('@' . ConstructorWithNoArgument::class, $definition->get(new Container([])));
+        $definition = new ArgumentDefinition('@@' . NoArgument::class);
+        $this->assertSame('@' . NoArgument::class, $definition->get(new Container([])));
     }
 
     public function testSupportsArrayWithIds()
     {
         $definition = new ArgumentDefinition(
             [
-                '@' . ConstructorWithNoArgument::class,
-                '@' . ConstructorWithOneArgument::class,
+                '@' . NoArgument::class,
+                '@' . ClassArgument::class,
                 'value'
             ]
         );
 
         $value = $definition->get(new Container([]));
         $this->assertCount(3, $value);
-        $this->assertInstanceOf(ConstructorWithNoArgument::class, $value[0]);
-        $this->assertInstanceOf(ConstructorWithOneArgument::class, $value[1]);
+        $this->assertInstanceOf(NoArgument::class, $value[0]);
+        $this->assertInstanceOf(ClassArgument::class, $value[1]);
         $this->assertSame('value', $value[2]);
     }
 
     public function testResolveIdsInContainer()
     {
-        $definition = new ArgumentDefinition(['@' . ConstructorWithOneScalarArgument::class]);
+        $definition = new ArgumentDefinition(['@' . AllTypesArgument::class]);
 
         $this->expectException(UnknownArgumentException::class);
         $this->expectExceptionMessage(
-            'Can\'t resolve parameter "scalar" of class "YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument"'
+            'Can\'t resolve parameter "scalar" of class "YaFou\Container\Tests\Fixtures\AllTypesArgument"'
         );
 
         $definition->resolve(new Container([]));
@@ -71,16 +71,16 @@ class ArgumentDefinitionTest extends TestCase
 
     public function testValueIsResolved()
     {
-        $definition = new ArgumentDefinition(ConstructorWithNoArgument::class, true);
-        $this->assertInstanceOf(ConstructorWithNoArgument::class, $definition->get(new Container([])));
+        $definition = new ArgumentDefinition(NoArgument::class, true);
+        $this->assertInstanceOf(NoArgument::class, $definition->get(new Container([])));
     }
 
     public function testResolveIdWithValueAlreadyResolved()
     {
-        $definition = new ArgumentDefinition(ConstructorWithOneScalarArgument::class, true);
+        $definition = new ArgumentDefinition(AllTypesArgument::class, true);
         $this->expectException(UnknownArgumentException::class);
         $this->expectExceptionMessage(
-            'Can\'t resolve parameter "scalar" of class "YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument"'
+            'Can\'t resolve parameter "scalar" of class "YaFou\Container\Tests\Fixtures\AllTypesArgument"'
         );
         $definition->resolve(new Container([]));
     }

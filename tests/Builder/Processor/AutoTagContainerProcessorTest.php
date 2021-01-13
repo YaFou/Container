@@ -5,17 +5,17 @@ namespace YaFou\Container\Tests\Builder\Processor;
 use PHPUnit\Framework\TestCase;
 use YaFou\Container\Builder\ContainerBuilder;
 use YaFou\Container\Builder\Processor\AutoTagContainerProcessor;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
-use YaFou\Container\Tests\Fixtures\ExtendedConstructorWithNoArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
+use YaFou\Container\Tests\Fixtures\ExtendedNoArgument;
 
 class AutoTagContainerProcessorTest extends TestCase
 {
     public function testAutoTag()
     {
         $builder = new ContainerBuilder();
-        $definition = $builder->class(ConstructorWithNoArgument::class);
+        $definition = $builder->class(NoArgument::class);
 
-        $processor = new AutoTagContainerProcessor([ConstructorWithNoArgument::class => ['tag1', 'tag2']]);
+        $processor = new AutoTagContainerProcessor([NoArgument::class => ['tag1', 'tag2']]);
         $processor->process($builder);
 
         $this->assertTrue($definition->hasTag('tag1'));
@@ -25,9 +25,9 @@ class AutoTagContainerProcessorTest extends TestCase
     public function testNotAutoTagIfTagExists()
     {
         $builder = new ContainerBuilder();
-        $definition = $builder->class(ConstructorWithNoArgument::class)->tag('tag', ['parameter' => 'value']);
+        $definition = $builder->class(NoArgument::class)->tag('tag', ['parameter' => 'value']);
 
-        $processor = new AutoTagContainerProcessor([ConstructorWithNoArgument::class => ['tag']]);
+        $processor = new AutoTagContainerProcessor([NoArgument::class => ['tag']]);
         $processor->process($builder);
 
         $this->assertSame(['parameter' => 'value'], $definition->getTag('tag'));
@@ -36,9 +36,9 @@ class AutoTagContainerProcessorTest extends TestCase
     public function testAutoTagChildren()
     {
         $builder = new ContainerBuilder();
-        $definition = $builder->class(ExtendedConstructorWithNoArgument::class);
+        $definition = $builder->class(ExtendedNoArgument::class);
 
-        $processor = new AutoTagContainerProcessor([ConstructorWithNoArgument::class => ['tag']]);
+        $processor = new AutoTagContainerProcessor([NoArgument::class => ['tag']]);
         $processor->process($builder);
 
         $this->assertTrue($definition->hasTag('tag'));
@@ -47,10 +47,10 @@ class AutoTagContainerProcessorTest extends TestCase
     public function testAutoTagWithParameter()
     {
         $builder = new ContainerBuilder();
-        $definition = $builder->class(ConstructorWithNoArgument::class);
+        $definition = $builder->class(NoArgument::class);
 
         $processor = new AutoTagContainerProcessor(
-            [ConstructorWithNoArgument::class => ['tag' => ['parameter' => 'value']]]
+            [NoArgument::class => ['tag' => ['parameter' => 'value']]]
         );
         $processor->process($builder);
 

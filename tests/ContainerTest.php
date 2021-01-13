@@ -14,10 +14,10 @@ use YaFou\Container\Exception\RecursiveDependencyDetectedException;
 use YaFou\Container\Exception\UnknownArgumentException;
 use YaFou\Container\Exception\WrongOptionException;
 use YaFou\Container\Proxy\ProxyManagerInterface;
-use YaFou\Container\Tests\Fixtures\ConstructorWithContainerArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneDefaultInterfaceArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
+use YaFou\Container\Tests\Fixtures\ContainerArgument;
+use YaFou\Container\Tests\Fixtures\NoArgument;
+use YaFou\Container\Tests\Fixtures\DefaultInterfaceArgument;
+use YaFou\Container\Tests\Fixtures\AllTypesArgument;
 use YaFou\Container\Tests\Fixtures\DoubleExtendedContainer;
 use YaFou\Container\Tests\Fixtures\ExtendedContainer;
 use YaFou\Container\Tests\Fixtures\Proxy\EchoText;
@@ -53,7 +53,7 @@ class ContainerTest extends TestCase
     public function testHasWithUnknownDefinition()
     {
         $container = new Container([]);
-        $this->assertTrue($container->has(ConstructorWithNoArgument::class));
+        $this->assertTrue($container->has(NoArgument::class));
     }
 
     public function testGetWithCustomDefinition()
@@ -67,7 +67,7 @@ class ContainerTest extends TestCase
 
     public function testGetSameValue()
     {
-        $container = new Container(['id' => new ClassDefinition(ConstructorWithNoArgument::class)]);
+        $container = new Container(['id' => new ClassDefinition(NoArgument::class)]);
         $this->assertSame(
             $container->get('id'),
             $container->get('id')
@@ -105,7 +105,7 @@ class ContainerTest extends TestCase
 
     public function testGetNotShared()
     {
-        $definition = new ClassDefinition(ConstructorWithNoArgument::class, false);
+        $definition = new ClassDefinition(NoArgument::class, false);
         $container = new Container(['id' => $definition]);
         $this->assertNotSame(
             $container->get('id'),
@@ -158,12 +158,12 @@ class ContainerTest extends TestCase
 
     public function testCustomProxyManager()
     {
-        $definition = new ClassDefinition(ConstructorWithNoArgument::class, true, true);
+        $definition = new ClassDefinition(NoArgument::class, true, true);
 
         $manager = $this->createMock(ProxyManagerInterface::class);
         $manager->expects($this->once())
             ->method('getProxy')
-            ->with(ConstructorWithNoArgument::class, $this->isInstanceOf(\Closure::class))
+            ->with(NoArgument::class, $this->isInstanceOf(\Closure::class))
             ->willReturn($object = new \stdClass());
 
         $container = new Container(['id' => $definition], ['proxy_manager' => $manager]);
@@ -220,20 +220,20 @@ class ContainerTest extends TestCase
 
     public function testValidateWithWrongDependency()
     {
-        $container = new Container(['id' => new ClassDefinition(ConstructorWithOneScalarArgument::class)]);
+        $container = new Container(['id' => new ClassDefinition(AllTypesArgument::class)]);
         $this->expectException(UnknownArgumentException::class);
         $this->expectExceptionMessage(
-            'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarArgument::class . '"'
+            'Can\'t resolve parameter "scalar" of class "' . AllTypesArgument::class . '"'
         );
         $container->validate();
     }
 
     public function testResolveDefinition()
     {
-        $container = new Container(['id' => new ClassDefinition(ConstructorWithOneScalarArgument::class)]);
+        $container = new Container(['id' => new ClassDefinition(AllTypesArgument::class)]);
         $this->expectException(UnknownArgumentException::class);
         $this->expectExceptionMessage(
-            'Can\'t resolve parameter "scalar" of class "' . ConstructorWithOneScalarArgument::class . '"'
+            'Can\'t resolve parameter "scalar" of class "' . AllTypesArgument::class . '"'
         );
         $container->resolveDefinition('id');
     }
@@ -249,15 +249,15 @@ class ContainerTest extends TestCase
     public function testResolveObjectWithContainerDependency()
     {
         $container = new Container([]);
-        $this->assertTrue($container->has(ConstructorWithContainerArgument::class));
+        $this->assertTrue($container->has(ContainerArgument::class));
     }
 
     public function testRemovingUnknownClassFromDefinitionsInResolving()
     {
         $container = new Container(
-            ['id' => new ClassDefinition(ConstructorWithOneDefaultInterfaceArgument::class, false)]
+            ['id' => new ClassDefinition(DefaultInterfaceArgument::class, false)]
         );
-        $this->assertInstanceOf(ConstructorWithOneDefaultInterfaceArgument::class, $container->get('id'));
-        $this->assertInstanceOf(ConstructorWithOneDefaultInterfaceArgument::class, $container->get('id'));
+        $this->assertInstanceOf(DefaultInterfaceArgument::class, $container->get('id'));
+        $this->assertInstanceOf(DefaultInterfaceArgument::class, $container->get('id'));
     }
 }

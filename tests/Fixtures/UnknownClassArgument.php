@@ -2,7 +2,7 @@
 
 namespace YaFou\Container\Tests\Fixtures;
 
-class ConstructorWithUnknownClassArgument
+class UnknownClassArgument
 {
     public function __construct(UnknownClass $class)
     {

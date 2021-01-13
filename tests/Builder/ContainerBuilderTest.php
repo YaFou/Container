@@ -21,10 +21,10 @@ use YaFou\Container\Proxy\ProxyManager;
 use YaFou\Container\Proxy\ProxyManagerInterface;
 use YaFou\Container\Tests\Fixtures\Builder\NoParentNoInterface;
 use YaFou\Container\Tests\Fixtures\Builder\OneParentNoInterface;
-use YaFou\Container\Tests\Fixtures\ConstructorWithNoArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithOneScalarArgument;
-use YaFou\Container\Tests\Fixtures\ConstructorWithTwoScalarArguments;
+use YaFou\Container\Tests\Fixtures\NoArgument;
+use YaFou\Container\Tests\Fixtures\ClassArgument;
+use YaFou\Container\Tests\Fixtures\AllTypesArgument;
+use YaFou\Container\Tests\Fixtures\TwoAllTypesArguments;
 
 class ContainerBuilderTest extends TestCase
 {
@@ -79,12 +79,12 @@ class ContainerBuilderTest extends TestCase
         $builder = new ContainerBuilder();
 
         $this->assertEquals(
-            new ClassDefinitionBuilder(ConstructorWithNoArgument::class),
-            $builder->class('id', ConstructorWithNoArgument::class)
+            new ClassDefinitionBuilder(NoArgument::class),
+            $builder->class('id', NoArgument::class)
         );
 
         $this->assertEquals(
-            new Container(['id' => new ClassDefinition(ConstructorWithNoArgument::class)]),
+            new Container(['id' => new ClassDefinition(NoArgument::class)]),
             $builder->build()
         );
     }
@@ -243,12 +243,12 @@ PHP;
         $builder = new ContainerBuilder();
 
         $this->assertEquals(
-            new ClassDefinitionBuilder(ConstructorWithNoArgument::class),
-            $builder->class(ConstructorWithNoArgument::class)
+            new ClassDefinitionBuilder(NoArgument::class),
+            $builder->class(NoArgument::class)
         );
 
         $this->assertEquals(
-            new Container([ConstructorWithNoArgument::class => new ClassDefinition(ConstructorWithNoArgument::class)]),
+            new Container([NoArgument::class => new ClassDefinition(NoArgument::class)]),
             $builder->build()
         );
     }
@@ -270,11 +270,11 @@ PHP;
         );
 
         $builder = (new ContainerBuilder())->addProcessors([$processor1, $processor2]);
-        $builder->class('id1', ConstructorWithNoArgument::class);
-        $builder->class('id2', ConstructorWithNoArgument::class);
-        $builder->class('id3', ConstructorWithNoArgument::class);
+        $builder->class('id1', NoArgument::class);
+        $builder->class('id2', NoArgument::class);
+        $builder->class('id3', NoArgument::class);
 
-        $container = new Container(['id3' => new ClassDefinition(ConstructorWithNoArgument::class)]);
+        $container = new Container(['id3' => new ClassDefinition(NoArgument::class)]);
         $this->assertEquals($container, $builder->build());
     }
 
@@ -288,10 +288,10 @@ PHP;
         );
 
         $builder = (new ContainerBuilder())->addProcessor($processor);
-        $builder->class('id1', ConstructorWithNoArgument::class);
-        $builder->class('id2', ConstructorWithNoArgument::class);
+        $builder->class('id1', NoArgument::class);
+        $builder->class('id2', NoArgument::class);
 
-        $container = new Container(['id2' => new ClassDefinition(ConstructorWithNoArgument::class)]);
+        $container = new Container(['id2' => new ClassDefinition(NoArgument::class)]);
         $this->assertEquals($container, $builder->build());
     }
 
@@ -388,15 +388,15 @@ PHP;
     public function testTagArgumentContainerProcessorIsDefault()
     {
         $builder = new ContainerBuilder();
-        $builder->class('id1', ConstructorWithNoArgument::class)->argument(0, '*tag');
-        $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
-        $builder->class('id3', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->class('id1', NoArgument::class)->argument(0, '*tag');
+        $builder->class('id2', NoArgument::class)->tag('tag');
+        $builder->class('id3', NoArgument::class)->tag('tag');
 
         $container = new Container(
             [
-                'id1' => new ClassDefinition(ConstructorWithNoArgument::class, true, false, [0 => ['@id2', '@id3']]),
-                'id2' => new ClassDefinition(ConstructorWithNoArgument::class),
-                'id3' => new ClassDefinition(ConstructorWithNoArgument::class)
+                'id1' => new ClassDefinition(NoArgument::class, true, false, [0 => ['@id2', '@id3']]),
+                'id2' => new ClassDefinition(NoArgument::class),
+                'id3' => new ClassDefinition(NoArgument::class)
             ]
         );
 
@@ -406,7 +406,7 @@ PHP;
     public function testGetDefinition()
     {
         $builder = new ContainerBuilder();
-        $definition = $builder->class('id', ConstructorWithNoArgument::class);
+        $definition = $builder->class('id', NoArgument::class);
         $this->assertSame($definition, $builder->getDefinition('id'));
     }
 
@@ -419,7 +419,7 @@ PHP;
     public function testHasDefinition()
     {
         $builder = new ContainerBuilder();
-        $builder->class('id', ConstructorWithNoArgument::class);
+        $builder->class('id', NoArgument::class);
         $this->assertTrue($builder->hasDefinition('id'));
     }
 
@@ -434,19 +434,19 @@ PHP;
     public function testGetDefinitionsByTag()
     {
         $builder = new ContainerBuilder();
-        $definition1 = $builder->class('id1', ConstructorWithNoArgument::class)->tag('tag');
-        $definition2 = $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag');
-        $builder->class('id3', ConstructorWithNoArgument::class);
+        $definition1 = $builder->class('id1', NoArgument::class)->tag('tag');
+        $definition2 = $builder->class('id2', NoArgument::class)->tag('tag');
+        $builder->class('id3', NoArgument::class);
         $this->assertSame(['id1' => $definition1, 'id2' => $definition2], $builder->getDefinitionsByTag('tag'));
     }
 
     public function testGetDefinitionsByTagAndPriority()
     {
         $builder = new ContainerBuilder();
-        $definition1 = $builder->class('id1', ConstructorWithNoArgument::class)->tag('tag');
-        $definition2 = $builder->class('id2', ConstructorWithNoArgument::class)->tag('tag', ['priority' => -10]);
-        $definition3 = $builder->class('id3', ConstructorWithNoArgument::class)->tag('tag', ['priority' => 10]);
-        $builder->class('id4', ConstructorWithNoArgument::class);
+        $definition1 = $builder->class('id1', NoArgument::class)->tag('tag');
+        $definition2 = $builder->class('id2', NoArgument::class)->tag('tag', ['priority' => -10]);
+        $definition3 = $builder->class('id3', NoArgument::class)->tag('tag', ['priority' => 10]);
+        $builder->class('id4', NoArgument::class);
 
         $this->assertSame(
             [
@@ -461,15 +461,15 @@ PHP;
     public function testGetDefinitions()
     {
         $builder = new ContainerBuilder();
-        $definition1 = $builder->class('id1', ConstructorWithNoArgument::class);
-        $definition2 = $builder->class('id2', ConstructorWithNoArgument::class);
+        $definition1 = $builder->class('id1', NoArgument::class);
+        $definition2 = $builder->class('id2', NoArgument::class);
         $this->assertSame(['id1' => $definition1, 'id2' => $definition2], $builder->getDefinitions());
     }
 
     public function testRemoveDefinition()
     {
         $builder = new ContainerBuilder();
-        $builder->class('id', ConstructorWithNoArgument::class)->tag('tag');
+        $builder->class('id', NoArgument::class)->tag('tag');
         $builder->removeDefinition('id');
         $this->assertEmpty($builder->getDefinitions());
     }
@@ -486,15 +486,15 @@ PHP;
     {
         $builder = new ContainerBuilder();
         $builder->globalArgument('scalar', false);
-        $builder->class(ConstructorWithOneScalarArgument::class);
+        $builder->class(AllTypesArgument::class);
         $container = $builder->build();
-        $this->assertFalse($container->get(ConstructorWithOneScalarArgument::class)->scalar);
+        $this->assertFalse($container->get(AllTypesArgument::class)->scalar);
     }
 
     public function testGlobalArguments()
     {
         $builder = new ContainerBuilder();
-        $builder->class(ConstructorWithTwoScalarArguments::class);
+        $builder->class(TwoAllTypesArguments::class);
         $builder->globalArguments(
             [
                 'parameter1' => 'argument1',
@@ -503,8 +503,8 @@ PHP;
         );
 
         $container = $builder->build();
-        $this->assertSame('argument1', $container->get(ConstructorWithTwoScalarArguments::class)->parameter1);
-        $this->assertSame('argument2', $container->get(ConstructorWithTwoScalarArguments::class)->parameter2);
+        $this->assertSame('argument1', $container->get(TwoAllTypesArguments::class)->parameter1);
+        $this->assertSame('argument2', $container->get(TwoAllTypesArguments::class)->parameter2);
     }
 
     public function testValues()
@@ -531,16 +531,16 @@ PHP;
 
     public function testAutoTag()
     {
-        $builder = (new ContainerBuilder())->autoTag(ConstructorWithNoArgument::class, 'tag');
-        $definition = $builder->class(ConstructorWithNoArgument::class);
+        $builder = (new ContainerBuilder())->autoTag(NoArgument::class, 'tag');
+        $definition = $builder->class(NoArgument::class);
         $builder->build();
         $this->assertTrue($definition->hasTag('tag'));
     }
 
     public function testAutoTagWithParameters()
     {
-        $builder = (new ContainerBuilder())->autoTag(ConstructorWithNoArgument::class, 'tag', ['parameter' => 'value']);
-        $definition = $builder->class(ConstructorWithNoArgument::class);
+        $builder = (new ContainerBuilder())->autoTag(NoArgument::class, 'tag', ['parameter' => 'value']);
+        $definition = $builder->class(NoArgument::class);
         $builder->build();
         $this->assertSame(['parameter' => 'value'], $definition->getTag('tag'));
     }
@@ -548,10 +548,10 @@ PHP;
     public function testAutoTagsWithString()
     {
         $builder = (new ContainerBuilder())->autoTags(
-            [ConstructorWithNoArgument::class => 'tag1', ConstructorWithOneArgument::class => 'tag2']
+            [NoArgument::class => 'tag1', ClassArgument::class => 'tag2']
         );
-        $definition1 = $builder->class(ConstructorWithNoArgument::class);
-        $definition2 = $builder->class(ConstructorWithOneArgument::class);
+        $definition1 = $builder->class(NoArgument::class);
+        $definition2 = $builder->class(ClassArgument::class);
         $builder->build();
         $this->assertTrue($definition1->hasTag('tag1'));
         $this->assertTrue($definition2->hasTag('tag2'));
@@ -561,12 +561,12 @@ PHP;
     {
         $builder = (new ContainerBuilder())->autoTags(
             [
-                ConstructorWithNoArgument::class => ['tag1', 'tag2'],
-                ConstructorWithOneArgument::class => 'tag3'
+                NoArgument::class => ['tag1', 'tag2'],
+                ClassArgument::class => 'tag3'
             ]
         );
-        $definition1 = $builder->class(ConstructorWithNoArgument::class);
-        $definition2 = $builder->class(ConstructorWithOneArgument::class);
+        $definition1 = $builder->class(NoArgument::class);
+        $definition2 = $builder->class(ClassArgument::class);
         $builder->build();
         $this->assertTrue($definition1->hasTag('tag1'));
         $this->assertTrue($definition1->hasTag('tag2'));
@@ -577,12 +577,12 @@ PHP;
     {
         $builder = (new ContainerBuilder())->autoTags(
             [
-                ConstructorWithNoArgument::class => ['tag1' => ['parameter' => 'value'], 'tag2'],
-                ConstructorWithOneArgument::class => 'tag3'
+                NoArgument::class => ['tag1' => ['parameter' => 'value'], 'tag2'],
+                ClassArgument::class => 'tag3'
             ]
         );
-        $definition1 = $builder->class(ConstructorWithNoArgument::class);
-        $definition2 = $builder->class(ConstructorWithOneArgument::class);
+        $definition1 = $builder->class(NoArgument::class);
+        $definition2 = $builder->class(ClassArgument::class);
         $builder->build();
         $this->assertSame(['parameter' => 'value'], $definition1->getTag('tag1'));
         $this->assertTrue($definition1->hasTag('tag2'));
@@ -591,8 +591,8 @@ PHP;
 
     public function testDisableAutoTag()
     {
-        $builder = (new ContainerBuilder())->disableAutoTag()->autoTag(ConstructorWithNoArgument::class, 'tag');
-        $definition = $builder->class(ConstructorWithNoArgument::class);
+        $builder = (new ContainerBuilder())->disableAutoTag()->autoTag(NoArgument::class, 'tag');
+        $definition = $builder->class(NoArgument::class);
         $builder->build();
         $this->assertFalse($definition->hasTag('tag'));
     }

@@ -2,14 +2,14 @@
 
 namespace YaFou\Container\Tests\Fixtures;
 
-class ConstructorWithOneArgument
+class ClassArgument
 {
     /**
-     * @var ConstructorWithNoArgument
+     * @var NoArgument
      */
     public $constructorWithNoArgument;
 
-    public function __construct(ConstructorWithNoArgument $constructorWithNoArgument)
+    public function __construct(NoArgument $constructorWithNoArgument)
     {
         $this->constructorWithNoArgument = $constructorWithNoArgument;
     }
